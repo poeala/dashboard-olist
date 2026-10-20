@@ -45,4 +45,7 @@ h1,.intro-strip h2,.panel-title,.embed-message h3{color:var(--ucasal-blue)}
 .project-authors{display:flex;align-items:flex-start;gap:9px;margin-top:16px;font-size:12px;line-height:1.7;color:#526175}
 .project-authors>.bi{color:var(--ucasal-red-dark)}
 .project-authors strong{color:var(--ucasal-blue);font-weight:600}
+.area-button{border:0;background:transparent;width:100%;text-align:left;font-family:inherit}
+.area-button:hover{background:#ffffff14;color:#fff}
+.area-button.sales-selected{background:#ffffff20;border-left:3px solid #E50019;padding-left:10px;font-weight:600}
 @media(max-width:800px){.academic-heading>p{font-size:12px}.project-authors{font-size:11px}}

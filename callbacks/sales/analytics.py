@@ -8,6 +8,7 @@ import plotly.express as px
 from dash import Input, Output, State, dcc
 
 from data.sales import consultar_ventas_agrupadas
+from data.definitions import ventas_validas
 
 
 def registrar_callbacks_analitica_ventas(app, df):
@@ -88,9 +89,7 @@ def registrar_callbacks_analitica_ventas(app, df):
             ]
 
         else:
-            df_filtrado = df_filtrado[
-                ~estados.isin(["canceled", "unavailable"])
-            ]
+            df_filtrado = ventas_validas(df_filtrado)
 
         totales = {}
 

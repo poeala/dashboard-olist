@@ -10,6 +10,7 @@ from components.navigation import crear_barra_navegacion
 from callbacks.sales.gerencial import registrar_callbacks_ventas
 from callbacks.sales.analytics import registrar_callbacks_analitica_ventas
 from callbacks.sales.decisions import registrar_callbacks_decisiones_ventas
+from callbacks.business import registrar_callbacks_negocio
 
 
 # Cargar los datos preparados desde Supabase.
@@ -70,6 +71,7 @@ registrar_callbacks_ventas(app, df)
 registrar_callbacks_navegacion(app, anios, meses, df)
 registrar_callbacks_analitica_ventas(app, df)
 registrar_callbacks_decisiones_ventas(app, df)
+registrar_callbacks_negocio(app)
 
 # Iniciar el servidor local.
 if __name__ == "__main__":

@@ -58,7 +58,8 @@ Si la contraseña contiene caracteres especiales, ingresarla como valor literal
 en el campo de la variable de Coolify.
 
 La base debe permitir la conexión desde el servidor de Coolify y contener las
-tablas `gld_sales_detail`, `gld_date_dimension` y `gld_payment_detail`.
+tablas `gld_sales_detail`, `gld_date_dimension`, `gld_order_logistics` y
+`gld_customer_analytics`. `gld_payment_detail` se reserva para Pagos.
 
 ## 4. Dominio y despliegue
 
@@ -81,13 +82,14 @@ configurar el control de acceso correspondiente antes de compartir el dominio.
 - `/`: muestra el portal React.
 - `/healthz`: responde `{"status":"ok","service":"olist-web"}`.
 - `/dashboard/healthz`: responde con `service: "olist-dashboard"`.
-- En Ventas, abrir Gerencial, Analítica y Decisiones y probar los filtros.
+- En Ventas, Logística y Clientes, abrir Gerencial, Analítica y Decisiones y probar los filtros.
 - El logo, los gráficos y las descargas deben funcionar dentro del iframe.
 
 La salud de Dash confirma que terminó de arrancar; no consulta PostgreSQL
 en cada comprobación. Las consultas posteriores también requieren conexión.
-Los datos cargados al inicio se actualizan al reiniciar el backend, según el
-comportamiento del dashboard original.
+Ventas carga al inicio; Logística y Clientes cargan al primer acceso de cada
+proceso. Para renovar las instantáneas, reiniciar el backend. Las reglas y
+limitaciones analíticas se documentan en `METRICAS.md`.
 
 ## Diagnóstico
 

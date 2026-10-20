@@ -3,11 +3,12 @@
 import pandas as pd
 from sqlalchemy import text
 from data.database import engine
+from data.definitions import PERIOD_CUTOFF_SQL
 
 
 def cargar_ventas():
     # Consultar el detalle de ventas con sus dimensiones.
-    consulta = text("""
+    consulta = text(f"""
         SELECT
             s.order_id,
             s.order_item_id,
@@ -32,18 +33,7 @@ def cargar_ventas():
         FROM gld_sales_detail s
         INNER JOIN gld_date_dimension d
             ON s.order_purchase_date = d.date
-        WHERE s.order_purchase_date < (
-            SELECT CASE
-                WHEN MAX(order_purchase_date) = (
-                    date_trunc('month', MAX(order_purchase_date))
-                    + interval '1 month - 1 day'
-                )::date
-                THEN date_trunc('month', MAX(order_purchase_date))
-                    + interval '1 month'
-                ELSE date_trunc('month', MAX(order_purchase_date))
-            END
-            FROM gld_sales_detail
-        )
+        WHERE s.order_purchase_date < ({PERIOD_CUTOFF_SQL})
     """)
 
     df = pd.read_sql(consulta, engine)
@@ -174,18 +164,7 @@ def consultar_ventas_agrupadas(
 
     # Preparar los filtros y sus parámetros.
     filtros = [
-        """s.order_purchase_date < (
-            SELECT CASE
-                WHEN MAX(order_purchase_date) = (
-                    date_trunc('month', MAX(order_purchase_date))
-                    + interval '1 month - 1 day'
-                )::date
-                THEN date_trunc('month', MAX(order_purchase_date))
-                    + interval '1 month'
-                ELSE date_trunc('month', MAX(order_purchase_date))
-            END
-            FROM gld_sales_detail
-        )"""
+        f"s.order_purchase_date < ({PERIOD_CUTOFF_SQL})"
     ]
 
     parametros = {}
