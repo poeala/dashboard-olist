@@ -7,9 +7,9 @@ La identidad visual y sus fuentes se documentan en [BRANDING.md](BRANDING.md).
 
 Portal React + Bootstrap con el dashboard Dash existente embebido.
 La web está en español, se adapta a móvil e incluye navegación entre las
-vistas Gerencial, Analítica y Decisiones, recarga, pantalla completa y apertura
-en otra pestaña. Logística, Clientes y Pagos figuran como próximos módulos,
-porque el backend original todavía no implementa esas áreas.
+vistas Gerencial, Analítica y Decisiones en **Ventas, Logística y Clientes**,
+recarga, pantalla completa y apertura en otra pestaña. Pagos permanece pendiente.
+Las definiciones, denominadores y reglas de hallazgos están en [METRICAS.md](METRICAS.md).
 
 ## Desarrollo local
 
@@ -25,7 +25,9 @@ Copy-Item .env.example .env
 
 Completar `.env` con las credenciales PostgreSQL/Supabase. Si el archivo ya
 existe, conservarlo. Las tablas Gold que necesita la aplicación son
-`gld_sales_detail`, `gld_date_dimension` y `gld_payment_detail`.
+`gld_sales_detail`, `gld_date_dimension`, `gld_order_logistics` y
+`gld_customer_analytics`. `gld_payment_detail` queda disponible para el módulo
+de Pagos pendiente.
 El backend consulta las ventas al iniciar; necesita acceso a la base para arrancar.
 
 Iniciar Python:
@@ -80,14 +82,16 @@ a PostgreSQL: necesita este backend desplegado y el proxy `/dashboard/`.
 
 ```text
 Navegador → React / Bootstrap
-             └── iframe /dashboard/?vista=gerencial&embed=1
+             └── iframe /dashboard/?area=logistica&vista=gerencial&embed=1
                     └── Vite (desarrollo) o Nginx (Docker)
                            └── Dash / Python → PostgreSQL / Supabase
 ```
 
 El prefijo `/dashboard/` se aplica a los recursos y callbacks de Dash.
 `embed=1` oculta la navegación duplicada; sin ese parámetro el dashboard
-conserva sus selectores. `vista` acepta `gerencial`, `analitica` y `decisiones`.
+conserva sus selectores. `area` acepta `ventas`, `logistica` y `clientes`;
+`vista` acepta `gerencial`, `analitica` y `decisiones`. Ejemplo de enlace al
+portal: `http://localhost:8080/?area=clientes&vista=analitica`.
 El logo usa la URL de recursos de Dash para funcionar bajo el prefijo.
 
 La web comprueba `/dashboard/healthz` antes de montar el iframe y muestra
@@ -95,7 +99,9 @@ un estado recuperable si el backend no responde. Esta comprobación confirma
 que la aplicación arrancó y cargó los datos iniciales; no garantiza que cada
 consulta posterior a la base vaya a funcionar. Los datos mantienen el ciclo
 de carga de la aplicación original; recargar el iframe no reinicia Python.
-Cambiar de vista vuelve a montar el dashboard y reinicia sus filtros.
+Logística y Clientes cargan una instantánea de solo lectura al primer acceso
+de cada proceso y la conservan hasta reiniciar el backend.
+Cambiar de área o vista vuelve a montar el dashboard y reinicia sus filtros.
 
 ## Verificación
 

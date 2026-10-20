@@ -198,8 +198,10 @@ def crear_vista_decisiones_ventas():
                         }
                     ),
                     html.P(
-                        "Las alertas señalan situaciones para investigar, "
-                        "no demuestran por sí solas sus causas.",
+                        "La facturación es el valor de productos en R$, sin flete, "
+                        "excluyendo cancelados y no disponibles. Las caídas comparan meses "
+                        "consecutivos con datos. Cancelación usa todos los pedidos con artículos. "
+                        "Las alertas señalan situaciones para investigar, no demuestran sus causas.",
                         style={
                             "fontSize": "12px",
                             "color": "#666",

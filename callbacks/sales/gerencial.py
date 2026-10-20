@@ -1,6 +1,7 @@
 
 # Callbacks para filtrar fechas y actualizar los gráficos
 from dash import Input, Output, State
+from data.definitions import ventas_validas
 
 from components.kpi import formato_numero
 from components.charts import (
@@ -135,19 +136,7 @@ def registrar_callbacks_ventas(app, df):
     def actualizar_dashboard(modo, anio, trimestre, mes):
 
         # Excluir pedidos cancelados o no disponibles.
-        estados_excluidos = ["canceled", "unavailable"]
-
-        estados = (
-            df["order_status"]
-            .fillna("")
-            .astype(str)
-            .str.strip()
-            .str.lower()
-        )
-
-        datos_base = df.loc[
-            ~estados.isin(estados_excluidos)
-        ].copy()
+        datos_base = ventas_validas(df)
 
         # Evitar consultas con filtros incompletos.
         if modo == "mensual" and (

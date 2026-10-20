@@ -5,7 +5,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import './styles.css';
 import ucasalLogo from './assets/ucasal-logo.png';
 import ucasalMark from './assets/ucasal-mark.png';
-import { views, selectedView, dashboardUrl, checkDashboard } from './dashboard';
+import { areas, views, selectedArea, selectedView, dashboardUrl, checkDashboard } from './dashboard';
 
 function Icon({ name, ...props }) {
   return <i className={`bi bi-${name}`} aria-hidden="true" {...props} />;
@@ -13,6 +13,7 @@ function Icon({ name, ...props }) {
 
 function App() {
   const [view, setView] = useState(() => selectedView(window.location.search));
+  const [area, setArea] = useState(() => selectedArea(window.location.search));
   const [menuOpen, setMenuOpen] = useState(false);
   const [status, setStatus] = useState('checking');
   const [attempt, setAttempt] = useState(0);
@@ -28,6 +29,7 @@ function App() {
       setFrameLoaded(false);
       setFrameSlow(false);
       setView(selectedView(window.location.search));
+      setArea(selectedArea(window.location.search));
     };
     const onFullscreen = () => setFullscreen(Boolean(document.fullscreenElement));
     window.addEventListener('popstate', onPopState);
@@ -56,11 +58,25 @@ function App() {
     if (status !== 'ready' || frameLoaded) return;
     const timer = setTimeout(() => setFrameSlow(true), 20000);
     return () => clearTimeout(timer);
-  }, [status, frameLoaded, view.id, attempt]);
+  }, [status, frameLoaded, area.id, view.id, attempt]);
+
+  function selectArea(next) {
+    setMenuOpen(false);
+    if (area.id === next.id) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('area', next.id);
+    url.searchParams.set('vista', 'gerencial');
+    window.history.pushState({}, '', url);
+    setFrameLoaded(false);
+    setFrameSlow(false);
+    setArea(next);
+    setView(views[0]);
+  }
 
   function selectView(next) {
     if (view.id === next.id) return;
     const url = new URL(window.location.href);
+    url.searchParams.set('area', area.id);
     url.searchParams.set('vista', next.id);
     window.history.pushState({}, '', url);
     setFrameLoaded(false);
@@ -105,10 +121,10 @@ function App() {
         </nav>
         <div className="nav-caption modules-caption">ÁREAS DEL NEGOCIO</div>
         <div className="nav flex-column">
-          <div className="side-link sales-selected"><Icon name="bag" /> Ventas <Icon name="chevron-right" /></div>
-          {[['truck', 'Logística'], ['people', 'Clientes'], ['credit-card', 'Pagos']].map(([icon, label]) => (
-            <div className="side-link unavailable" key={label}><Icon name={icon} /><span>{label}</span><span className="soon">Pronto</span></div>
+          {areas.map((item) => (
+            <button key={item.id} className={`side-link area-button ${area.id === item.id ? 'sales-selected' : ''}`} aria-current={area.id === item.id ? 'page' : undefined} onClick={() => selectArea(item)}><Icon name={item.icon} />{item.name}{area.id === item.id && <Icon name="chevron-right" />}</button>
           ))}
+          <div className="side-link unavailable"><Icon name="credit-card" /><span>Pagos</span><span className="soon">Pronto</span></div>
         </div>
         <div className="sidebar-bottom"><div className="insight-icon"><Icon name="mortarboard" /></div><strong>Análisis de<br />Datos Masivos</strong><p>Maestría en Ciencia de Datos<br />UCASAL</p><div className="sidebar-footer"><span className="small-dot" /> Proyecto académico · Tablero de prueba</div></div>
       </aside>
@@ -126,25 +142,25 @@ function App() {
           </div>
 
           <section className="intro-strip" aria-label="Área de análisis">
-            <div className="intro-symbol"><Icon name="graph-up-arrow" /></div><div><span className="section-overline">PANORAMA COMERCIAL</span><h2>Una perspectiva para cada decisión</h2><p>Del resultado general al detalle que hace la diferencia.</p></div><div className="strip-decoration" aria-hidden="true"><span /><span /><span /><span /><span /><span /><span /></div>
+            <div className="intro-symbol"><Icon name={area.icon} /></div><div><span className="section-overline">{area.overline}</span><h2>{area.title}</h2><p>{area.description}</p></div><div className="strip-decoration" aria-hidden="true"><span /><span /><span /><span /><span /><span /><span /></div>
           </section>
 
-          <section ref={panel} className="dashboard-panel" aria-label="Dashboard de ventas">
-            <div className="panel-heading"><div><span className="panel-title"><Icon name="bag" /> Ventas</span><span className="panel-subtitle"> / {view.name}</span></div><div className="panel-actions"><button className="btn icon-button" title="Volver a cargar el dashboard" aria-label="Volver a cargar el dashboard" onClick={() => setAttempt((value) => value + 1)}><Icon name="arrow-clockwise" /></button><a className="btn icon-button" href={dashboardUrl(view.id, false)} target="_blank" rel="noreferrer" title="Abrir dashboard en otra pestaña" aria-label="Abrir dashboard en otra pestaña"><Icon name="box-arrow-up-right" /></a><button className="btn icon-button" title={fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'} aria-label={fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'} onClick={toggleFullscreen}><Icon name={fullscreen ? 'fullscreen-exit' : 'arrows-fullscreen'} /></button></div></div>
-            <div className="view-bar"><nav className="nav view-tabs" aria-label="Vistas de ventas">{views.map((item) => <button key={item.id} className={`nav-link ${view.id === item.id ? 'active' : ''}`} aria-current={view.id === item.id ? 'page' : undefined} onClick={() => selectView(item)}><Icon name={item.icon} />{item.name}</button>)}</nav><span className="view-hint">{view.description}</span></div>
+          <section ref={panel} className="dashboard-panel" aria-label={`Dashboard de ${area.name}`}>
+            <div className="panel-heading"><div><span className="panel-title"><Icon name={area.icon} /> {area.name}</span><span className="panel-subtitle"> / {view.name}</span></div><div className="panel-actions"><button className="btn icon-button" title="Volver a cargar el dashboard" aria-label="Volver a cargar el dashboard" onClick={() => setAttempt((value) => value + 1)}><Icon name="arrow-clockwise" /></button><a className="btn icon-button" href={dashboardUrl(view.id, false, area.id)} target="_blank" rel="noreferrer" title="Abrir dashboard en otra pestaña" aria-label="Abrir dashboard en otra pestaña"><Icon name="box-arrow-up-right" /></a><button className="btn icon-button" title={fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'} aria-label={fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'} onClick={toggleFullscreen}><Icon name={fullscreen ? 'fullscreen-exit' : 'arrows-fullscreen'} /></button></div></div>
+            <div className="view-bar"><nav className="nav view-tabs" aria-label={`Vistas de ${area.name}`}>{views.map((item) => <button key={item.id} className={`nav-link ${view.id === item.id ? 'active' : ''}`} aria-current={view.id === item.id ? 'page' : undefined} onClick={() => selectView(item)}><Icon name={item.icon} />{item.name}</button>)}</nav><span className="view-hint">{view.description}</span></div>
             {fullscreenError && <div className="alert alert-warning m-3" role="alert">{fullscreenError}</div>}
             <div className="embed-container" aria-busy={status === 'checking' || (status === 'ready' && !frameLoaded)}>
-              {status === 'ready' && <iframe ref={frame} key={`${view.id}-${attempt}`} src={dashboardUrl(view.id)} title={`Dashboard de ventas · ${view.name}`} className={`dashboard-frame ${frameLoaded ? 'loaded' : ''}`} onLoad={onFrameLoad} />}
+              {status === 'ready' && <iframe ref={frame} key={`${area.id}-${view.id}-${attempt}`} src={dashboardUrl(view.id, true, area.id)} title={`Dashboard de ${area.name} · ${view.name}`} className={`dashboard-frame ${frameLoaded ? 'loaded' : ''}`} onLoad={onFrameLoad} />}
               {(status !== 'ready' || !frameLoaded) && <div className="embed-message" role="status">
                 <div className={`message-icon ${status === 'offline' ? 'offline' : ''}`}><Icon name={status === 'offline' ? 'plug' : 'bar-chart-line'} /></div>
-                <span className="section-overline">DASHBOARD DE VENTAS</span>
+                <span className="section-overline">DASHBOARD DE {area.name.toUpperCase()}</span>
                 <h3>{status === 'offline' ? 'Conectemos con tus datos' : frameSlow ? 'El dashboard está tardando más de lo habitual' : 'Preparando tu espacio de análisis'}</h3>
                 <p>{status === 'offline' ? 'No pudimos acceder al dashboard. Verificá que el servicio esté disponible y volvé a intentar.' : 'Estamos cargando los gráficos, indicadores y filtros de tu negocio.'}</p>
                 {status === 'offline' || frameSlow ? <button className="btn btn-ucasal" onClick={() => setAttempt((value) => value + 1)}><Icon name="arrow-clockwise" /> Volver a intentar</button> : <span className="spinner-border spinner-border-sm brand-spinner" aria-label="Cargando" />}
-                <div className="message-features"><span><Icon name="sliders" /> Filtros interactivos</span><span><Icon name="pie-chart" /> Indicadores de ventas</span><span><Icon name="compass" /> Análisis de negocio</span></div>
+                <div className="message-features"><span><Icon name="sliders" /> Filtros interactivos</span><span><Icon name="pie-chart" /> Indicadores de {area.name.toLowerCase()}</span><span><Icon name="compass" /> Análisis de negocio</span></div>
               </div>}
             </div>
-            <div className="panel-footer"><span><Icon name="info-circle" /> Los filtros se aplican dentro de cada vista.</span><span>OLIST · SALES INTELLIGENCE</span></div>
+            <div className="panel-footer"><span><Icon name="info-circle" /> Los filtros se reinician al cambiar de área o vista.</span><span>OLIST · BUSINESS INTELLIGENCE</span></div>
           </section>
           <footer className="page-footer"><span><strong>UCASAL</strong><span className="footer-divider">/</span> Universidad Católica de Salta</span><span>Fabio Quaino · María Luz Andrade</span></footer>
         </main>

@@ -39,3 +39,47 @@
 #contenedor_dashboard button:focus-visible { outline: 2px solid #E50019; outline-offset: 2px; }
 #contenedor_dashboard input[type="radio"],
 #contenedor_dashboard input[type="checkbox"] { accent-color: #003D7C; }
+
+.business-page { padding: 20px 0; color: #334155; font-family: Arial, sans-serif; }
+.business-heading h2 { font-size: 24px; margin: 0 0 7px; }
+.business-heading > p { color: #64748b; font-size: 13px; }
+.business-filters {
+    display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end;
+    padding: 16px; background: white; border: 1px solid #e2e8f0;
+    border-radius: 10px; margin: 18px 0;
+}
+.business-filter { min-width: 150px; flex: 1; }
+.business-filter label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 7px; }
+.business-filter input {
+    width: 100%; box-sizing: border-box; padding: 9px; border: 1px solid #cbd5e1;
+    border-radius: 5px; font-size: 13px; min-height: 36px;
+}
+.business-note { font-size: 12px; line-height: 1.7; color: #526175; margin: 14px 0; }
+.business-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 16px 0; }
+.business-card {
+    padding: 16px; border: 1px solid #e2e8f0; border-top: 3px solid #E50019;
+    border-radius: 9px; background: white; min-width: 0;
+}
+.business-card p { font-size: 12px; margin: 0 0 12px; }
+.business-card h3 { font-size: clamp(18px, 2vw, 25px); color: #003D7C; margin: 0 0 9px; overflow-wrap: anywhere; }
+.business-card small { font-size: 11px; line-height: 1.5; color: #64748b; display: block; }
+.business-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.business-chart { border: 1px solid #e2e8f0; background: white; border-radius: 9px; overflow: hidden; min-width: 0; }
+.business-table { margin-top: 18px; padding: 18px; background: white; border: 1px solid #e2e8f0; border-radius: 9px; }
+.business-table h3 { font-size: 16px; margin: 0 0 12px; color: #003D7C; }
+.business-empty { padding: 30px; background: white; border: 1px dashed #cbd5e1; border-radius: 9px; margin: 18px 0; }
+.business-empty h3 { color: #003D7C; font-size: 18px; }
+.business-empty p { font-size: 13px; line-height: 1.7; }
+.business-table .export {
+    background: #003D7C; color: white; padding: 8px 12px; border: 0;
+    border-radius: 5px; cursor: pointer; margin-bottom: 10px;
+}
+@media (max-width: 800px) {
+    .business-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .business-charts { grid-template-columns: 1fr; }
+    .business-table { padding: 12px; }
+}
+@media (max-width: 400px) {
+    .business-kpis { grid-template-columns: 1fr; }
+    .business-filter { min-width: 100%; }
+}

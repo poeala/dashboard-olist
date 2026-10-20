@@ -5,6 +5,7 @@ import plotly.express as px
 from dash import Input, Output, State
 
 from components.charts import aplicar_estilo_grafico
+from data.definitions import facturacion_mensual
 
 
 def registrar_callbacks_decisiones_ventas(app, df):
@@ -190,31 +191,9 @@ def registrar_callbacks_decisiones_ventas(app, df):
         # Calcular la facturación mensual y su variación.
         # Se usa el histórico completo para conservar el mes anterior
         # al calcular las caídas.
-        datos_facturacion = datos.dropna(
-            subset=["price"]
-        )
-
-        ventas_mensuales = (
-            datos_facturacion.groupby("periodo")["price"]
-            .sum()
-            .sort_index()
-            .rename("Facturación")
-            .reset_index()
-        )
-
-        ventas_mensuales["Facturación anterior"] = (
-            ventas_mensuales["Facturación"].shift(1)
-        )
-
-        ventas_mensuales["Variación (%)"] = (
-            (
-                ventas_mensuales["Facturación"]
-                - ventas_mensuales["Facturación anterior"]
-            )
-            / ventas_mensuales["Facturación anterior"].where(
-                ventas_mensuales["Facturación anterior"] != 0
-            )
-        ) * 100
+        # Misma base de facturación que Gerencial y Analítica.
+        # Cancelación sigue calculándose sobre todos los pedidos más abajo.
+        ventas_mensuales = facturacion_mensual(datos)
 
         caidas = ventas_mensuales.copy()
 
@@ -462,10 +441,12 @@ def registrar_callbacks_decisiones_ventas(app, df):
                     f"{nombres_meses[periodo.month]} {periodo.year}"
                 ),
                 "Evidencia": (
-                    f"Facturación de ${fila['Facturación']:,.2f}; "
+                    f"Valor de productos de R$ {fila['Facturación']:,.2f}; "
                     f"variación de {variacion:.2f}% "
                     "respecto del mes anterior."
-                )
+                ),
+                "Acción sugerida": "Revisar categorías y vendedores que explican la caída; "
+                                  "contrastar con estacionalidad y cobertura del período."
             })
 
         # Crear hallazgos por reseñas bajas.
@@ -508,7 +489,8 @@ def registrar_callbacks_decisiones_ventas(app, df):
                     "Evidencia": (
                         f"Puntuación promedio de {puntuacion:.2f}/5 "
                         f"en {cantidad} reseñas únicas."
-                    )
+                    ),
+                    "Acción sugerida": "Cruzar reseñas con entregas y vendedores antes de atribuir una causa."
                 })
 
         # Ordenar por período más reciente y prioridad alta primero.
@@ -535,7 +517,8 @@ def registrar_callbacks_decisiones_ventas(app, df):
                 "Prioridad",
                 "Hallazgo",
                 "Período",
-                "Evidencia"
+                "Evidencia",
+                "Acción sugerida"
             ]
         ]
 
