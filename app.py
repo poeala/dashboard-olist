@@ -40,7 +40,7 @@ app = Dash(
     suppress_callback_exceptions=True,
     url_base_pathname="/dashboard/",
 )
-app.title = "Dashboard Olist"
+app.title = "UCASAL · Dashboard Olist"
 server = app.server
 
 

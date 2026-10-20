@@ -10,7 +10,7 @@
 
 /* Destacar la opción seleccionada con el azul del dashboard */
 .selector-vistas label:has(input:checked) {
-    background-color: #263f8c;
+    background-color: #003D7C;
     color: white;
     font-weight: 600;
 }
@@ -22,12 +22,20 @@
 
 /* Mantener el texto blanco al pasar sobre la opción seleccionada */
 .selector-vistas label:has(input:checked):hover {
-    background-color: #263f8c;
+    background-color: #003D7C;
     color: white;
 }
 
 /* Cambiar el texto de las opciones no seleccionadas al pasar el mouse */
 .selector-vistas label:not(:has(input:checked)):hover {
-    background-color: #e2e6ed;
-    color: #263f8c;
+    background-color: #e8eff7;
+    color: #003D7C;
 }
+/* Controles del dashboard embebido. */
+#contenedor_dashboard h2 { color: #003D7C; }
+.selector-vistas label:has(input:checked) { background-color: #E50019; }
+.selector-vistas label:has(input:checked):hover { background-color: #B20D15; }
+#contenedor_dashboard input:focus-visible,
+#contenedor_dashboard button:focus-visible { outline: 2px solid #E50019; outline-offset: 2px; }
+#contenedor_dashboard input[type="radio"],
+#contenedor_dashboard input[type="checkbox"] { accent-color: #003D7C; }

@@ -7,7 +7,8 @@ def crear_barra_navegacion():
         [
             # Mostrar el logo de Olist a la izquierda.
             html.Img(
-                src=get_asset_url("logo.png"),
+                src=get_asset_url("ucasal-logo.png"),
+                alt="UCASAL",
                 style={
                     "height": "36px",
                     "width": "auto",

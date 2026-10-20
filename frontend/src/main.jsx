@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import './styles.css';
+import ucasalLogo from './assets/ucasal-logo.png';
+import ucasalMark from './assets/ucasal-mark.png';
 import { views, selectedView, dashboardUrl, checkDashboard } from './dashboard';
 
 function Icon({ name, ...props }) {
@@ -95,9 +97,9 @@ function App() {
       <a className="visually-hidden-focusable skip-link" href="#main-content">Saltar al contenido</a>
       {menuOpen && <button className="sidebar-backdrop" aria-label="Cerrar menú" onClick={() => setMenuOpen(false)} />}
       <aside className={`sidebar ${menuOpen ? 'is-open' : ''}`} aria-label="Navegación principal">
-        <a className="brand" href="/" aria-label="Olist, inicio">olist<span className="brand-dot">.</span><span className="brand-tag">intelligence</span></a>
+        <a className="brand" href="/" aria-label="UCASAL, inicio"><span className="brand-logo"><img src={ucasalLogo} alt="UCASAL" /></span><span className="brand-tag">Universidad Católica de Salta</span></a>
         <div className="workspace"><span className="workspace-symbol"><Icon name="buildings" /></span><div><strong>Olist Commerce</strong><small>Espacio de análisis</small></div><Icon name="chevron-expand" /></div>
-        <div className="nav-caption">WORKSPACE</div>
+        <div className="nav-caption">ESPACIO DE ANÁLISIS</div>
         <nav className="nav flex-column">
           <a href="#main-content" className="side-link active" aria-current="page" onClick={() => setMenuOpen(false)}><Icon name="grid-1x2" /> Dashboard <span className="active-dot" /></a>
         </nav>
@@ -108,18 +110,18 @@ function App() {
             <div className="side-link unavailable" key={label}><Icon name={icon} /><span>{label}</span><span className="soon">Pronto</span></div>
           ))}
         </div>
-        <div className="sidebar-bottom"><div className="insight-icon"><Icon name="stars" /></div><strong>Datos que impulsan<br />mejores decisiones.</strong><p>Todo tu análisis comercial,<br />en un mismo lugar.</p><div className="sidebar-footer"><span className="small-dot" /> Business Intelligence</div></div>
+        <div className="sidebar-bottom"><div className="insight-icon"><Icon name="mortarboard" /></div><strong>Análisis de<br />Datos Masivos</strong><p>Maestría en Ciencia de Datos<br />UCASAL</p><div className="sidebar-footer"><span className="small-dot" /> Proyecto académico · Tablero de prueba</div></div>
       </aside>
 
       <div className="main-shell">
         <header className="topbar">
-          <div className="d-flex align-items-center gap-3"><button className="btn menu-toggle" aria-label="Abrir menú" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}><Icon name="list" /></button><span className="breadcrumb-label">Workspace <Icon name="chevron-right" /> <strong>Dashboard</strong></span></div>
-          <div className="d-flex align-items-center gap-3"><span className="topbar-label">OLIST ANALYTICS</span><span className="avatar" aria-label="Olist">O</span></div>
+          <div className="d-flex align-items-center gap-3"><button className="btn menu-toggle" aria-label="Abrir menú" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}><Icon name="list" /></button><span className="breadcrumb-label">UCASAL <Icon name="chevron-right" /> <strong>Dashboard Olist</strong></span></div>
+          <div className="d-flex align-items-center gap-3"><span className="topbar-label">UCASAL · ANALÍTICA DE DATOS</span><span className="avatar"><img src={ucasalMark} alt="UCASAL" /></span></div>
         </header>
 
         <main id="main-content" className="content">
           <div className="page-heading">
-            <div><div className="eyebrow"><span /> INTELIGENCIA DE NEGOCIOS</div><h1>El pulso de tus ventas<span>.</span></h1><p>Tus datos, una visión clara. Explorá el desempeño comercial de Olist.</p></div>
+            <div className="academic-heading"><div className="eyebrow"><span /> UCASAL · PROYECTO ACADÉMICO</div><h1>Tablero de prueba<span>.</span></h1><p>Presentación del trabajo realizado para la cátedra de <strong>Análisis de Datos Masivos</strong> de la carrera de <strong>Maestría en Ciencia de Datos de UCASAL</strong>.</p><div className="project-authors"><Icon name="people" /><span>Realizado por <strong>Fabio Quaino</strong> y <strong>María Luz Andrade</strong>.</span></div></div>
             <div className={`connection-badge ${status === 'ready' ? 'connected' : ''}`} role="status"><span className="small-dot" />{status === 'ready' ? 'Dashboard conectado' : status === 'checking' ? 'Conectando dashboard' : 'Sin conexión'}</div>
           </div>
 
@@ -138,13 +140,13 @@ function App() {
                 <span className="section-overline">DASHBOARD DE VENTAS</span>
                 <h3>{status === 'offline' ? 'Conectemos con tus datos' : frameSlow ? 'El dashboard está tardando más de lo habitual' : 'Preparando tu espacio de análisis'}</h3>
                 <p>{status === 'offline' ? 'No pudimos acceder al dashboard. Verificá que el servicio esté disponible y volvé a intentar.' : 'Estamos cargando los gráficos, indicadores y filtros de tu negocio.'}</p>
-                {status === 'offline' || frameSlow ? <button className="btn btn-olist" onClick={() => setAttempt((value) => value + 1)}><Icon name="arrow-clockwise" /> Volver a intentar</button> : <span className="spinner-border spinner-border-sm text-success" aria-label="Cargando" />}
+                {status === 'offline' || frameSlow ? <button className="btn btn-ucasal" onClick={() => setAttempt((value) => value + 1)}><Icon name="arrow-clockwise" /> Volver a intentar</button> : <span className="spinner-border spinner-border-sm brand-spinner" aria-label="Cargando" />}
                 <div className="message-features"><span><Icon name="sliders" /> Filtros interactivos</span><span><Icon name="pie-chart" /> Indicadores de ventas</span><span><Icon name="compass" /> Análisis de negocio</span></div>
               </div>}
             </div>
             <div className="panel-footer"><span><Icon name="info-circle" /> Los filtros se aplican dentro de cada vista.</span><span>OLIST · SALES INTELLIGENCE</span></div>
           </section>
-          <footer className="page-footer"><span>olist<span className="footer-dot">.</span><span className="footer-divider">/</span> Una mirada más clara a tu negocio.</span><span>Business Intelligence</span></footer>
+          <footer className="page-footer"><span><strong>UCASAL</strong><span className="footer-divider">/</span> Universidad Católica de Salta</span><span>Fabio Quaino · María Luz Andrade</span></footer>
         </main>
       </div>
     </div>

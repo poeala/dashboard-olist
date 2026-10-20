@@ -1,5 +1,10 @@
 # Olist · Business Intelligence
 
+Tablero de prueba para presentar el trabajo realizado para la cátedra de
+**Análisis de Datos Masivos** de la carrera de **Maestría en Ciencia de Datos
+de UCASAL**, realizado por **Fabio Quaino y María Luz Andrade**.
+La identidad visual y sus fuentes se documentan en [BRANDING.md](BRANDING.md).
+
 Portal React + Bootstrap con el dashboard Dash existente embebido.
 La web está en español, se adapta a móvil e incluye navegación entre las
 vistas Gerencial, Analítica y Decisiones, recarga, pantalla completa y apertura

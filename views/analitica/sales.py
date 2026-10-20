@@ -219,7 +219,7 @@ def crear_vista_analitica_ventas():
                                 id="btn_exportar_analitica_pdf",
                                 n_clicks=0,
                                 style={
-                                    "backgroundColor": "#1f4e79",
+                                    "backgroundColor": "#003D7C",
                                     "color": "white",
                                     "border": "none",
                                     "borderRadius": "6px",

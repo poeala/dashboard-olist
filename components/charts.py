@@ -2,6 +2,11 @@
 import plotly.express as px
 import pandas as pd
 
+# Paleta del sitio oficial de UCASAL. Los colores semánticos explícitos
+# de los gráficos de decisiones conservan su significado.
+UCASAL_COLORS = ["#003D7C", "#E50019", "#628EB8", "#B20D15", "#8796A8", "#E98B96"]
+px.defaults.color_discrete_sequence = UCASAL_COLORS
+
 
 # Aplicar un estilo común a todos los gráficos.
 def aplicar_estilo_grafico(fig, margen_inferior=28):
@@ -14,7 +19,8 @@ def aplicar_estilo_grafico(fig, margen_inferior=28):
             yanchor="top",
             pad=dict(t=0, b=0)
         ),
-        font=dict(size=9),
+        font=dict(size=9, family="Arial, sans-serif", color="#334155"),
+        colorway=UCASAL_COLORS,
         margin=dict(l=24, r=24, t=48, b=margen_inferior),
         template="plotly_white"
     )
