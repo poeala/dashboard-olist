@@ -1,5 +1,5 @@
 # Barra compacta para navegar entre dashboards y vistas
-from dash import html, dcc
+from dash import html, dcc, get_asset_url
 
 
 def crear_barra_navegacion():
@@ -7,7 +7,7 @@ def crear_barra_navegacion():
         [
             # Mostrar el logo de Olist a la izquierda.
             html.Img(
-                src="/assets/logo.png",
+                src=get_asset_url("logo.png"),
                 style={
                     "height": "36px",
                     "width": "auto",

@@ -1,0 +1,11 @@
+services:
+  dashboard:
+    extends:
+      file: compose.coolify.yaml
+      service: dashboard
+  web:
+    extends:
+      file: compose.coolify.yaml
+      service: web
+    ports:
+      - "127.0.0.1:8080:80"
