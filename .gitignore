@@ -4,3 +4,9 @@
 __pycache__/
 *.py[cod]
 .vscode/
+node_modules/
+dist/
+.env.*
+!.env.example
+*.log
+test-results/
