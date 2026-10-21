@@ -30,8 +30,9 @@ def crear_vista_decisiones_ventas():
                 "padding": "16px",
                 "borderRadius": "8px",
                 "boxShadow": "0 1px 5px #dddddd",
-                "flex": "1",
-                "minWidth": "180px"
+                "flex": "1 1 180px",
+                "minWidth": "180px",
+                "boxSizing": "border-box"
             }
         )
 
@@ -61,9 +62,17 @@ def crear_vista_decisiones_ventas():
             }
         )
 
+    estilo_panel = {
+        "backgroundColor": "white",
+        "padding": "14px",
+        "borderRadius": "8px",
+        "boxShadow": "0 1px 5px #dddddd",
+        "boxSizing": "border-box"
+    }
+
     return html.Div(
         [
-            # Encabezado con filtros a la derecha.
+            # Encabezado y filtros.
             html.Div(
                 [
                     html.Div(
@@ -76,7 +85,7 @@ def crear_vista_decisiones_ventas():
                                 }
                             ),
                             html.P(
-                                "Identificar tendencias, desvíos y oportunidades para orientar las decisiones del negocio.",
+                                "Detectá desvíos, tendencias y oportunidades para orientar las decisiones del negocio.",
                                 style={
                                     "margin": "0",
                                     "fontSize": "12px",
@@ -85,7 +94,7 @@ def crear_vista_decisiones_ventas():
                             )
                         ],
                         style={
-                            "flex": "1",
+                            "flex": "1 1 280px",
                             "minWidth": "220px"
                         }
                     ),
@@ -97,7 +106,7 @@ def crear_vista_decisiones_ventas():
                         style={
                             "display": "flex",
                             "gap": "10px",
-                            "flex": "1",
+                            "flex": "0 1 380px",
                             "minWidth": "280px",
                             "maxWidth": "440px"
                         }
@@ -141,7 +150,7 @@ def crear_vista_decisiones_ventas():
                 }
             ),
 
-            # Gráficos: estados a la izquierda y categorías a la derecha.
+            # Gráficos.
             html.Div(
                 [
                     html.Div(
@@ -153,10 +162,7 @@ def crear_vista_decisiones_ventas():
                             )
                         ],
                         style={
-                            "backgroundColor": "white",
-                            "padding": "10px",
-                            "borderRadius": "8px",
-                            "boxShadow": "0 1px 5px #dddddd",
+                            **estilo_panel,
                             "flex": "1 1 400px",
                             "minWidth": "0"
                         }
@@ -170,10 +176,7 @@ def crear_vista_decisiones_ventas():
                             )
                         ],
                         style={
-                            "backgroundColor": "white",
-                            "padding": "10px",
-                            "borderRadius": "8px",
-                            "boxShadow": "0 1px 5px #dddddd",
+                            **estilo_panel,
                             "flex": "1 1 400px",
                             "minWidth": "0"
                         }
@@ -190,52 +193,58 @@ def crear_vista_decisiones_ventas():
             # Tabla de hallazgos.
             html.Div(
                 [
-                    html.H3(
-                        "Hallazgos",
-                        style={
-                            "fontSize": "16px",
-                            "margin": "0 0 12px 0"
-                        }
+                    html.Div(
+                        [
+                            html.H3(
+                                "Hallazgos detectados",
+                                style={
+                                    "fontSize": "16px",
+                                    "margin": "0 0 5px 0"
+                                }
+                            ),
+                            html.P(
+                                "Situaciones que cumplen las reglas de detección configuradas.",
+                                style={
+                                    "fontSize": "12px",
+                                    "color": "#666",
+                                    "margin": "0"
+                                }
+                            )
+                        ],
+                        style={"marginBottom": "12px"}
                     ),
-                    html.P(
-                        "La facturación es el valor de productos en R$, sin flete, "
-                        "excluyendo cancelados y no disponibles. Las caídas comparan meses "
-                        "consecutivos con datos. Cancelación usa todos los pedidos con artículos. "
-                        "Las alertas señalan situaciones para investigar, no demuestran sus causas.",
-                        style={
-                            "fontSize": "12px",
-                            "color": "#666",
-                            "margin": "0 0 12px 0"
-                        }
-                    ),
+
                     dash_table.DataTable(
                         id="decisiones_tabla_hallazgos",
                         columns=[],
                         data=[],
                         page_size=10,
                         sort_action="native",
-                        style_table={"overflowX": "auto"},
+                        filter_action="native",
+                        style_table={
+                            "overflowX": "auto",
+                            "minWidth": "100%"
+                        },
                         style_cell={
                             "padding": "9px",
                             "textAlign": "left",
                             "fontFamily": "Arial",
                             "fontSize": "12px",
                             "minWidth": "120px",
-                            "maxWidth": "300px",
+                            "maxWidth": "320px",
                             "whiteSpace": "normal",
                             "height": "auto"
                         },
                         style_header={
                             "fontWeight": "bold",
                             "backgroundColor": "#f0f2f5",
-                            "textAlign": "left"
+                            "textAlign": "left",
+                            "whiteSpace": "normal"
                         },
                         style_data_conditional=[
                             {
                                 "if": {
-                                    "filter_query": (
-                                        '{Prioridad} = "Alta"'
-                                    ),
+                                    "filter_query": '{Prioridad} = "Alta"',
                                     "column_id": "Prioridad"
                                 },
                                 "color": "#b91c1c",
@@ -243,22 +252,125 @@ def crear_vista_decisiones_ventas():
                             },
                             {
                                 "if": {
-                                    "filter_query": (
-                                        '{Prioridad} = "Media"'
-                                    ),
+                                    "filter_query": '{Prioridad} = "Media"',
                                     "column_id": "Prioridad"
                                 },
                                 "color": "#a16207",
                                 "fontWeight": "bold"
                             }
                         ]
+                    ),
+
+                    html.P(
+                        "La evidencia muestra los datos que activaron cada regla. Las acciones sugeridas orientan la revisión, pero los hallazgos no demuestran por sí solos las causas.",
+                        style={
+                            "fontSize": "11px",
+                            "color": "#666",
+                            "margin": "10px 0 0 0"
+                        }
                     )
                 ],
                 style={
-                    "backgroundColor": "white",
-                    "padding": "14px",
-                    "borderRadius": "8px",
-                    "boxShadow": "0 1px 5px #dddddd"
+                    **estilo_panel,
+                    "marginBottom": "14px"
+                }
+            ),
+
+            # Catálogo de reglas de detección.
+            html.Details(
+                [
+                    html.Summary(
+                        "Reglas de detección y criterios de análisis",
+                        style={
+                            "fontSize": "14px",
+                            "fontWeight": "bold",
+                            "cursor": "pointer",
+                            "padding": "4px 0"
+                        }
+                    ),
+
+                    html.P(
+                        "Este catálogo detalla las condiciones que debe cumplir un dato para generar un hallazgo.",
+                        style={
+                            "fontSize": "12px",
+                            "color": "#666",
+                            "margin": "10px 0"
+                        }
+                    ),
+
+                    dash_table.DataTable(
+                        id="decisiones_tabla_reglas",
+                        columns=[
+                            {"name": "Hallazgo", "id": "Hallazgo"},
+                            {"name": "Regla de detección", "id": "Regla"},
+                            {"name": "Alcance", "id": "Alcance"}
+                        ],
+                        data=[
+                            {
+                                "Hallazgo": "Caída de facturación",
+                                "Regla": (
+                                    "Variación mensual inferior a -10 %. "
+                                    "Prioridad alta si es igual o inferior a -20 %."
+                                ),
+                                "Alcance": (
+                                    "Comparación con el mes calendario anterior."
+                                )
+                            },
+                            {
+                                "Hallazgo": "Reseñas bajas",
+                                "Regla": (
+                                    "Puntuación promedio igual o inferior "
+                                    "a 3,5 sobre 5 y al menos 5 reseñas únicas."
+                                ),
+                                "Alcance": (
+                                    "Por categoría de producto y período seleccionado."
+                                )
+                            },
+                            {
+                                "Hallazgo": "Aumento de cancelaciones",
+                                "Regla": (
+                                    "Aumento superior a 0,5 puntos porcentuales "
+                                    "respecto del mes anterior."
+                                ),
+                                "Alcance": (
+                                    "Pedidos únicos cancelados o no disponibles "
+                                    "sobre el total de pedidos."
+                                )
+                            }
+                        ],
+                        style_table={
+                            "overflowX": "auto"
+                        },
+                        style_cell={
+                            "padding": "9px",
+                            "textAlign": "left",
+                            "fontFamily": "Arial",
+                            "fontSize": "12px",
+                            "minWidth": "150px",
+                            "maxWidth": "360px",
+                            "whiteSpace": "normal",
+                            "height": "auto"
+                        },
+                        style_header={
+                            "fontWeight": "bold",
+                            "backgroundColor": "#f0f2f5",
+                            "whiteSpace": "normal"
+                        }
+                    ),
+
+                    html.P(
+                        "La facturación considera el valor de los productos en R$, sin flete, excluyendo pedidos cancelados y no disponibles. La tasa de cancelación incluye ambos estados y se calcula sobre pedidos únicos con artículos. Los hallazgos son señales para revisar, no pruebas de causalidad.",
+                        style={
+                            "fontSize": "11px",
+                            "color": "#666",
+                            "margin": "10px 0 0 0"
+                        }
+                    )
+                ],
+                open=False,
+                style={
+                    **estilo_panel,
+                    "marginBottom": "14px"
                 }
             )
         ],
