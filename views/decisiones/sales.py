@@ -92,7 +92,7 @@ def crear_vista_decisiones_ventas():
                                 }
                             ),
                             html.P(
-                                "Detectá desvíos, tendencias y oportunidades para orientar las decisiones del negocio.",
+                                "Ventas, facturación y evolución comercial.",
                                 style={
                                     "margin": "0",
                                     "fontSize": "12px",
