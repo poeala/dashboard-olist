@@ -10,13 +10,18 @@ from components.navigation import crear_barra_navegacion
 from callbacks.sales.gerencial import registrar_callbacks_ventas
 from callbacks.sales.analytics import registrar_callbacks_analitica_ventas
 from callbacks.sales.decisions import registrar_callbacks_decisiones_ventas
+
 from callbacks.business import registrar_callbacks_negocio
+
+from callbacks.customers.gerencial import registrar_callbacks_clientes
+from callbacks.customers.analytics import registrar_callbacks_analitica_clientes
+from callbacks.customers.decisions import registrar_callbacks_decisiones_clientes
 
 
 # Cargar los datos preparados desde Supabase.
 df = cargar_ventas()
 
-# Obtener los años disponibles como números enteros
+# Obtener los años disponibles como números enteros.
 anios = sorted(df["anio"].dropna().astype(int).unique())
 
 # Definir los nombres de los meses.
@@ -32,7 +37,7 @@ meses = [
     (9, "Septiembre"),
     (10, "Octubre"),
     (11, "Noviembre"),
-    (12, "Diciembre")
+    (12, "Diciembre"),
 ]
 
 # Crear la aplicación y permitir vistas con componentes dinámicos.
@@ -49,21 +54,25 @@ server = app.server
 def health():
     return {"status": "ok", "service": "olist-dashboard"}
 
+
 # Definir la estructura general del dashboard.
 app.layout = html.Div(
     [
         dcc.Location(id="dashboard-location", refresh=False),
-        html.Div(crear_barra_navegacion(), id="dashboard-navigation"),
+        html.Div(
+            crear_barra_navegacion(),
+            id="dashboard-navigation",
+        ),
         html.Div(
             id="contenedor_dashboard",
-            style={"padding": "0 20px 20px 20px"}
-        )
+            style={"padding": "0 20px 20px 20px"},
+        ),
     ],
     style={
         "fontFamily": "Arial",
         "backgroundColor": "#f5f6fa",
-        "minHeight": "100vh"
-    }
+        "minHeight": "100vh",
+    },
 )
 
 # Registrar los callbacks de cada módulo.
@@ -71,7 +80,13 @@ registrar_callbacks_ventas(app, df)
 registrar_callbacks_navegacion(app, anios, meses, df)
 registrar_callbacks_analitica_ventas(app, df)
 registrar_callbacks_decisiones_ventas(app, df)
+
 registrar_callbacks_negocio(app)
+
+registrar_callbacks_clientes(app)
+registrar_callbacks_analitica_clientes(app)
+registrar_callbacks_decisiones_clientes(app)
+
 
 # Iniciar el servidor local.
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+
 /* Contenedor compacto de las opciones de vista */
 .selector-vistas label {
     background-color: transparent;
@@ -8,7 +9,7 @@
     transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-/* Destacar la opción seleccionada con el azul del dashboard */
+/* Destacar la opción seleccionada */
 .selector-vistas label:has(input:checked) {
     background-color: #003D7C;
     color: white;
@@ -31,55 +32,269 @@
     background-color: #e8eff7;
     color: #003D7C;
 }
-/* Controles del dashboard embebido. */
-#contenedor_dashboard h2 { color: #003D7C; }
-.selector-vistas label:has(input:checked) { background-color: #E50019; }
-.selector-vistas label:has(input:checked):hover { background-color: #B20D15; }
-#contenedor_dashboard input:focus-visible,
-#contenedor_dashboard button:focus-visible { outline: 2px solid #E50019; outline-offset: 2px; }
-#contenedor_dashboard input[type="radio"],
-#contenedor_dashboard input[type="checkbox"] { accent-color: #003D7C; }
 
-.business-page { padding: 20px 0; color: #334155; font-family: Arial, sans-serif; }
-.business-heading h2 { font-size: 24px; margin: 0 0 7px; }
-.business-heading > p { color: #64748b; font-size: 13px; }
+/* Controles del dashboard embebido */
+#contenedor_dashboard h2 {
+    color: #003D7C;
+}
+
+.selector-vistas label:has(input:checked) {
+    background-color: #E50019;
+}
+
+.selector-vistas label:has(input:checked):hover {
+    background-color: #B20D15;
+}
+
+#contenedor_dashboard input:focus-visible,
+#contenedor_dashboard button:focus-visible {
+    outline: 2px solid #E50019;
+    outline-offset: 2px;
+}
+
+#contenedor_dashboard input[type="radio"],
+#contenedor_dashboard input[type="checkbox"] {
+    accent-color: #003D7C;
+}
+
+/* Página de negocio */
+.business-page {
+    padding: 20px 0;
+    color: #334155;
+    font-family: Arial, sans-serif;
+}
+
+/* Encabezado: título y descripción a la izquierda, filtros a la derecha */
+.business-heading.business-heading-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 28px;
+    width: 100%;
+    margin-bottom: 24px;
+}
+
+.business-heading-text {
+    flex: 1;
+    min-width: 220px;
+}
+
+.business-heading h2 {
+    font-size: 24px;
+    margin: 0 0 7px;
+}
+
+.business-heading-text .business-subtitle {
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Filtros de año y mes en la misma fila */
+.business-period-filters {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.business-period-filters .business-filter {
+    width: 155px;
+    min-width: 0;
+    flex: 0 0 155px;
+}
+
+/* Filtros secundarios de Analítica y Decisiones */
 .business-filters {
-    display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end;
-    padding: 16px; background: white; border: 1px solid #e2e8f0;
-    border-radius: 10px; margin: 18px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: flex-end;
+    padding: 16px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    margin: 18px 0;
 }
-.business-filter { min-width: 150px; flex: 1; }
-.business-filter label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 7px; }
+
+.business-filter {
+    min-width: 150px;
+    flex: 1;
+}
+
+.business-filter label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 7px;
+}
+
 .business-filter input {
-    width: 100%; box-sizing: border-box; padding: 9px; border: 1px solid #cbd5e1;
-    border-radius: 5px; font-size: 13px; min-height: 36px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px;
+    border: 1px solid #cbd5e1;
+    border-radius: 5px;
+    font-size: 13px;
+    min-height: 36px;
 }
-.business-note { font-size: 12px; line-height: 1.7; color: #526175; margin: 14px 0; }
-.business-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 16px 0; }
+
+/* Notas y explicaciones */
+.business-note {
+    font-size: 12px;
+    line-height: 1.7;
+    color: #526175;
+    margin: 14px 0;
+}
+
+/* Tarjetas KPI */
+.business-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+}
+
 .business-card {
-    padding: 16px; border: 1px solid #e2e8f0; border-top: 3px solid #E50019;
-    border-radius: 9px; background: white; min-width: 0;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+    border-top: 3px solid #E50019;
+    border-radius: 9px;
+    background: white;
+    min-width: 0;
 }
-.business-card p { font-size: 12px; margin: 0 0 12px; }
-.business-card h3 { font-size: clamp(18px, 2vw, 25px); color: #003D7C; margin: 0 0 9px; overflow-wrap: anywhere; }
-.business-card small { font-size: 11px; line-height: 1.5; color: #64748b; display: block; }
-.business-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.business-chart { border: 1px solid #e2e8f0; background: white; border-radius: 9px; overflow: hidden; min-width: 0; }
-.business-table { margin-top: 18px; padding: 18px; background: white; border: 1px solid #e2e8f0; border-radius: 9px; }
-.business-table h3 { font-size: 16px; margin: 0 0 12px; color: #003D7C; }
-.business-empty { padding: 30px; background: white; border: 1px dashed #cbd5e1; border-radius: 9px; margin: 18px 0; }
-.business-empty h3 { color: #003D7C; font-size: 18px; }
-.business-empty p { font-size: 13px; line-height: 1.7; }
+
+.business-card p {
+    font-size: 12px;
+    margin: 0 0 12px;
+}
+
+.business-card h3 {
+    font-size: clamp(18px, 2vw, 25px);
+    color: #003D7C;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+/* Gráfico principal: separación de los gráficos inferiores */
+.business-main-chart {
+    margin-bottom: 36px;
+}
+
+/* Gráficos secundarios */
+.business-charts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    margin-top: 24px;
+}
+
+.business-chart {
+    border: 1px solid #e2e8f0;
+    background: white;
+    border-radius: 9px;
+    overflow: hidden;
+    min-width: 0;
+}
+
+/* Tablas */
+.business-table {
+    margin-top: 18px;
+    padding: 18px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+}
+
+.business-table h3 {
+    font-size: 16px;
+    margin: 0 0 12px;
+    color: #003D7C;
+}
+
 .business-table .export {
-    background: #003D7C; color: white; padding: 8px 12px; border: 0;
-    border-radius: 5px; cursor: pointer; margin-bottom: 10px;
+    background: #003D7C;
+    color: white;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 10px;
 }
+
+/* Estados vacíos */
+.business-empty {
+    padding: 30px;
+    background: white;
+    border: 1px dashed #cbd5e1;
+    border-radius: 9px;
+    margin: 18px 0;
+}
+
+.business-empty h3 {
+    color: #003D7C;
+    font-size: 18px;
+}
+
+.business-empty p {
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+/* Diseño adaptable */
 @media (max-width: 800px) {
-    .business-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .business-charts { grid-template-columns: 1fr; }
-    .business-table { padding: 12px; }
+    .business-heading.business-heading-row {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .business-period-filters {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .business-period-filters .business-filter {
+        flex: 1 1 0;
+        width: auto;
+        min-width: 135px;
+    }
+
+    .business-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .business-charts {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .business-table {
+        padding: 12px;
+    }
 }
+
 @media (max-width: 400px) {
-    .business-kpis { grid-template-columns: 1fr; }
-    .business-filter { min-width: 100%; }
+    .business-period-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .business-period-filters .business-filter {
+        width: 100%;
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    .business-kpis {
+        grid-template-columns: 1fr;
+    }
+
+    .business-filter {
+        min-width: 100%;
+    }
 }

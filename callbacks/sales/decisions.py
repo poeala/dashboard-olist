@@ -1,7 +1,9 @@
 
 # Callbacks para la vista de toma de decisiones de ventas
+
 import pandas as pd
 import plotly.express as px
+
 from dash import Input, Output, State
 
 from components.charts import aplicar_estilo_grafico
@@ -10,14 +12,33 @@ from data.definitions import facturacion_mensual
 
 def registrar_callbacks_decisiones_ventas(app, df):
 
-    # Preparar las opciones del filtro de año.
+    nombres_meses = {
+        1: "Enero",
+        2: "Febrero",
+        3: "Marzo",
+        4: "Abril",
+        5: "Mayo",
+        6: "Junio",
+        7: "Julio",
+        8: "Agosto",
+        9: "Septiembre",
+        10: "Octubre",
+        11: "Noviembre",
+        12: "Diciembre",
+    }
+
+    # ---------------------------------------------------------
+    # Opciones del filtro de año
+    # ---------------------------------------------------------
+
     @app.callback(
         Output("decisiones_filtro_anio", "options"),
         Output("decisiones_filtro_anio", "value"),
         Input("selector_vista", "value"),
-        State("decisiones_filtro_anio", "value")
+        State("decisiones_filtro_anio", "value"),
     )
     def actualizar_opciones_anio(vista, anio_actual):
+
         anios = sorted(
             pd.to_numeric(df["anio"], errors="coerce")
             .dropna()
@@ -41,45 +62,35 @@ def registrar_callbacks_decisiones_ventas(app, df):
 
         return opciones, valor
 
-    # Actualizar los meses disponibles para el año seleccionado.
+    # ---------------------------------------------------------
+    # Opciones del filtro de mes
+    # ---------------------------------------------------------
+
     @app.callback(
         Output("decisiones_filtro_mes", "options"),
         Output("decisiones_filtro_mes", "value"),
         Output("decisiones_filtro_mes", "disabled"),
         Input("decisiones_filtro_anio", "value"),
-        State("decisiones_filtro_mes", "value")
+        State("decisiones_filtro_mes", "value"),
     )
     def actualizar_opciones_mes(anio, mes_actual):
-        nombres_meses = {
-            1: "Enero",
-            2: "Febrero",
-            3: "Marzo",
-            4: "Abril",
-            5: "Mayo",
-            6: "Junio",
-            7: "Julio",
-            8: "Agosto",
-            9: "Septiembre",
-            10: "Octubre",
-            11: "Noviembre",
-            12: "Diciembre"
-        }
 
         if anio in (None, "__todos__"):
             return (
                 [{"label": "Todos", "value": "__todos__"}],
                 "__todos__",
-                True
+                True,
             )
 
         anio_numerico = pd.to_numeric(
-            df["anio"], errors="coerce"
+            df["anio"],
+            errors="coerce",
         )
 
         meses = sorted(
             pd.to_numeric(
                 df.loc[anio_numerico == int(anio), "mes_numero"],
-                errors="coerce"
+                errors="coerce",
             )
             .dropna()
             .astype(int)
@@ -101,7 +112,10 @@ def registrar_callbacks_decisiones_ventas(app, df):
 
         return opciones, valor, False
 
-    # Actualizar indicadores, gráficos y hallazgos.
+    # ---------------------------------------------------------
+    # Indicadores, gráficos y hallazgos
+    # ---------------------------------------------------------
+
     @app.callback(
         Output("decisiones_total_alertas", "children"),
         Output("decisiones_caida_facturacion", "children"),
@@ -114,43 +128,33 @@ def registrar_callbacks_decisiones_ventas(app, df):
         Output("decisiones_tabla_hallazgos", "data"),
         Input("selector_vista", "value"),
         Input("decisiones_filtro_anio", "value"),
-        Input("decisiones_filtro_mes", "value")
+        Input("decisiones_filtro_mes", "value"),
     )
     def actualizar_decisiones(vista, anio, mes):
 
-        nombres_meses = {
-            1: "Enero",
-            2: "Febrero",
-            3: "Marzo",
-            4: "Abril",
-            5: "Mayo",
-            6: "Junio",
-            7: "Julio",
-            8: "Agosto",
-            9: "Septiembre",
-            10: "Octubre",
-            11: "Noviembre",
-            12: "Diciembre"
-        }
+        # -----------------------------------------------------
+        # Preparar los datos
+        # -----------------------------------------------------
 
-        # Preparar los datos originales sin excluir estados.
         datos = df.copy()
 
         datos["order_purchase_date"] = pd.to_datetime(
             datos["order_purchase_date"],
-            errors="coerce"
+            errors="coerce",
         )
+
         datos["price"] = pd.to_numeric(
             datos["price"],
-            errors="coerce"
+            errors="coerce",
         )
+
         datos["review_score"] = pd.to_numeric(
             datos["review_score"],
-            errors="coerce"
+            errors="coerce",
         )
 
         datos = datos.dropna(
-            subset=["order_purchase_date"]
+            subset=["order_purchase_date"],
         )
 
         datos["product_category_name"] = (
@@ -170,7 +174,7 @@ def registrar_callbacks_decisiones_ventas(app, df):
             datos["order_purchase_date"].dt.to_period("M")
         )
 
-        # Aplicar los filtros de año y mes.
+        # Aplicar los filtros para los indicadores y hallazgos.
         datos_periodo = datos.copy()
 
         if anio not in (None, "__todos__"):
@@ -188,18 +192,21 @@ def registrar_callbacks_decisiones_ventas(app, df):
                 == int(mes)
             ]
 
-        # Calcular la facturación mensual y su variación.
-        # Se usa el histórico completo para conservar el mes anterior
-        # al calcular las caídas.
-        # Misma base de facturación que Gerencial y Analítica.
-        # Cancelación sigue calculándose sobre todos los pedidos más abajo.
+        # -----------------------------------------------------
+        # Hallazgo 1: caída de facturación mensual
+        # -----------------------------------------------------
+
+        # Se conserva el histórico completo para comparar
+        # cada mes con el mes calendario anterior.
         ventas_mensuales = facturacion_mensual(datos)
 
         caidas = ventas_mensuales.copy()
 
         if anio not in (None, "__todos__"):
             caidas = caidas[
-                caidas["periodo"].map(lambda p: p.year) == int(anio)
+                caidas["periodo"].map(
+                    lambda p: p.year
+                ) == int(anio)
             ]
 
         if (
@@ -207,18 +214,105 @@ def registrar_callbacks_decisiones_ventas(app, df):
             and mes not in (None, "__todos__")
         ):
             caidas = caidas[
-                caidas["periodo"].map(lambda p: p.month) == int(mes)
+                caidas["periodo"].map(
+                    lambda p: p.month
+                ) == int(mes)
             ]
 
         caidas = caidas[
             caidas["Variación (%)"] < -10
         ].copy()
 
-        # Preparar las reseñas únicas por pedido y categoría.
+        # -----------------------------------------------------
+        # Hallazgo 2: aumento de la tasa de cancelación
+        # -----------------------------------------------------
+
+        # Contar cada pedido una sola vez.
+        pedidos_historicos = datos.drop_duplicates(
+            subset=["order_id"],
+        ).copy()
+
+        pedidos_historicos["_cancelado"] = (
+            pedidos_historicos["order_status"].isin(
+                ["canceled", "unavailable"]
+            )
+        ).astype(int)
+
+        cancelaciones_mensuales = (
+            pedidos_historicos.groupby("periodo")
+            .agg(
+                Total_pedidos=("order_id", "nunique"),
+                Pedidos_cancelados=("_cancelado", "sum"),
+            )
+            .reset_index()
+            .sort_values("periodo")
+        )
+
+        cancelaciones_mensuales["Tasa_cancelacion (%)"] = (
+            cancelaciones_mensuales["Pedidos_cancelados"]
+            / cancelaciones_mensuales["Total_pedidos"]
+            * 100
+        )
+
+        cancelaciones_mensuales["Periodo_anterior"] = (
+            cancelaciones_mensuales["periodo"].shift(1)
+        )
+
+        cancelaciones_mensuales["Tasa_anterior (%)"] = (
+            cancelaciones_mensuales["Tasa_cancelacion (%)"].shift(1)
+        )
+
+        cancelaciones_mensuales["Variacion (pp)"] = (
+            cancelaciones_mensuales["Tasa_cancelacion (%)"]
+            - cancelaciones_mensuales["Tasa_anterior (%)"]
+        )
+
+        # Comparar únicamente meses calendario consecutivos.
+        cancelaciones_mensuales = cancelaciones_mensuales[
+            cancelaciones_mensuales.apply(
+                lambda fila: (
+                    pd.notna(fila["Periodo_anterior"])
+                    and fila["Periodo_anterior"]
+                    == fila["periodo"] - 1
+                ),
+                axis=1,
+            )
+        ].copy()
+
+        # Regla: aumento superior a 0,5 puntos porcentuales.
+        alertas_cancelacion = cancelaciones_mensuales[
+            cancelaciones_mensuales["Variacion (pp)"] > 0.5
+        ].copy()
+
+        # Aplicar los filtros después de calcular la variación
+        # con el histórico completo.
+        if anio not in (None, "__todos__"):
+            alertas_cancelacion = alertas_cancelacion[
+                alertas_cancelacion["periodo"].map(
+                    lambda p: p.year
+                ) == int(anio)
+            ]
+
+        if (
+            anio not in (None, "__todos__")
+            and mes not in (None, "__todos__")
+        ):
+            alertas_cancelacion = alertas_cancelacion[
+                alertas_cancelacion["periodo"].map(
+                    lambda p: p.month
+                ) == int(mes)
+            ]
+
+        # -----------------------------------------------------
+        # Hallazgo 3: reseñas con puntuación baja
+        # -----------------------------------------------------
+
+        # Una reseña por pedido y categoría para evitar
+        # contar varias veces el mismo pedido en una categoría.
         resenas = (
             datos_periodo.dropna(subset=["review_score"])
             .drop_duplicates(
-                subset=["order_id", "product_category_name"]
+                subset=["order_id", "product_category_name"],
             )
         )
 
@@ -226,12 +320,12 @@ def registrar_callbacks_decisiones_ventas(app, df):
             resenas.groupby("product_category_name")
             .agg(
                 Puntuacion_promedio=("review_score", "mean"),
-                Resenas_unicas=("order_id", "nunique")
+                Resenas_unicas=("order_id", "nunique"),
             )
             .reset_index()
         )
 
-        # Exigir cinco reseñas únicas para generar hallazgos.
+        # Evaluar solo categorías con cinco o más reseñas únicas.
         categorias_validas = categorias_resenas[
             categorias_resenas["Resenas_unicas"] >= 5
         ].copy()
@@ -242,11 +336,14 @@ def registrar_callbacks_decisiones_ventas(app, df):
             ]
             .sort_values(
                 ["Puntuacion_promedio", "Resenas_unicas"],
-                ascending=[True, False]
+                ascending=[True, False],
             )
         )
 
-        # Gráfico: cinco categorías con al menos cinco reseñas.
+        # -----------------------------------------------------
+        # Gráfico de categorías con peores puntuaciones
+        # -----------------------------------------------------
+
         categorias_con_hallazgo = set(
             categorias_resenas_bajas["product_category_name"]
         )
@@ -255,7 +352,7 @@ def registrar_callbacks_decisiones_ventas(app, df):
             categorias_validas
             .sort_values(
                 ["Puntuacion_promedio", "Resenas_unicas"],
-                ascending=[True, False]
+                ascending=[True, False],
             )
             .head(5)
             .copy()
@@ -276,10 +373,11 @@ def registrar_callbacks_decisiones_ventas(app, df):
                 title="No hay categorías con al menos 5 reseñas"
             )
         else:
-            # En el gráfico horizontal, la menor puntuación debe quedar arriba.
+            # En el gráfico horizontal, la menor puntuación
+            # queda arriba.
             categorias_grafico = categorias_grafico.sort_values(
                 "Puntuacion_promedio",
-                ascending=False
+                ascending=False,
             )
 
             fig_categorias = px.bar(
@@ -290,7 +388,7 @@ def registrar_callbacks_decisiones_ventas(app, df):
                 color="Color",
                 color_discrete_map={
                     "Reseñas bajas": "#dc2626",
-                    "Sin hallazgo": "#f59e0b"
+                    "Sin hallazgo": "#f59e0b",
                 },
                 text="Puntuacion_promedio",
                 hover_data=["Resenas_unicas"],
@@ -299,32 +397,38 @@ def registrar_callbacks_decisiones_ventas(app, df):
                     "product_category_name": "Categoría",
                     "Puntuacion_promedio": "Puntuación promedio",
                     "Resenas_unicas": "Reseñas únicas",
-                    "Color": "Resultado"
-                }
+                    "Color": "Resultado",
+                },
             )
 
             fig_categorias.update_traces(
                 texttemplate="%{text:.2f}",
                 textposition="outside",
-                cliponaxis=False
+                cliponaxis=False,
             )
+
             fig_categorias.update_layout(
-                showlegend=False
+                showlegend=False,
             )
 
         fig_categorias.update_xaxes(
             range=[0, 5],
-            title="Puntuación promedio (1 a 5)"
+            title="Puntuación promedio (1 a 5)",
         )
+
         fig_categorias.update_yaxes(
             title="Categoría",
-            automargin=True
+            automargin=True,
         )
+
         aplicar_estilo_grafico(fig_categorias, 32)
 
-        # Agrupar los estados de pedidos en tres categorías.
+        # -----------------------------------------------------
+        # Gráfico de distribución de estados
+        # -----------------------------------------------------
+
         pedidos = datos_periodo.drop_duplicates(
-            subset=["order_id"]
+            subset=["order_id"],
         ).copy()
 
         pedidos["Estado agrupado"] = pedidos["order_status"].apply(
@@ -344,7 +448,7 @@ def registrar_callbacks_decisiones_ventas(app, df):
             .nunique()
             .reindex(
                 ["Entregado", "En proceso", "Cancelado"],
-                fill_value=0
+                fill_value=0,
             )
             .rename("Pedidos")
             .reset_index()
@@ -368,15 +472,15 @@ def registrar_callbacks_decisiones_ventas(app, df):
                 color_discrete_map={
                     "Entregado": "#16a34a",
                     "En proceso": "#2563eb",
-                    "Cancelado": "#dc2626"
+                    "Cancelado": "#dc2626",
                 },
                 category_orders={
                     "Estado agrupado": [
                         "Entregado",
                         "En proceso",
-                        "Cancelado"
+                        "Cancelado",
                     ]
-                }
+                },
             )
 
             fig_facturacion.update_traces(
@@ -387,12 +491,15 @@ def registrar_callbacks_decisiones_ventas(app, df):
                     "Pedidos: %{value:,}<br>"
                     "Porcentaje: %{percent}"
                     "<extra></extra>"
-                )
+                ),
             )
 
         aplicar_estilo_grafico(fig_facturacion, 24)
 
-        # Calcular la tasa de cancelación sobre pedidos únicos.
+        # -----------------------------------------------------
+        # Indicador: tasa de cancelación del período
+        # -----------------------------------------------------
+
         total_pedidos = pedidos["order_id"].nunique()
 
         pedidos_cancelados = pedidos[
@@ -416,18 +523,25 @@ def registrar_callbacks_decisiones_ventas(app, df):
         estilo_tasa = {
             "fontSize": "25px",
             "margin": "0",
-            "color": color_tasa
+            "color": color_tasa,
         }
 
-        # Crear hallazgos sin acciones genéricas.
+        # -----------------------------------------------------
+        # Construir la tabla de hallazgos
+        # -----------------------------------------------------
+
         hallazgos = []
 
+        # Hallazgos por caída de facturación.
         for _, fila in caidas.iterrows():
+
             variacion = fila["Variación (%)"]
             periodo = fila["periodo"]
 
             prioridad = (
-                "Alta" if variacion <= -20 else "Media"
+                "Alta"
+                if variacion <= -20
+                else "Media"
             )
 
             hallazgos.append({
@@ -441,16 +555,60 @@ def registrar_callbacks_decisiones_ventas(app, df):
                     f"{nombres_meses[periodo.month]} {periodo.year}"
                 ),
                 "Evidencia": (
-                    f"Valor de productos de R$ {fila['Facturación']:,.2f}; "
+                    f"Facturación de R$ {fila['Facturación']:,.2f}; "
                     f"variación de {variacion:.2f}% "
                     "respecto del mes anterior."
                 ),
-                "Acción sugerida": "Revisar categorías y vendedores que explican la caída; "
-                                  "contrastar con estacionalidad y cobertura del período."
+                "Acción sugerida": (
+                    "Revisar la evolución de la facturación y "
+                    "contrastar el resultado con el mes anterior "
+                    "antes de atribuir una causa."
+                ),
             })
 
-        # Crear hallazgos por reseñas bajas.
+        # Hallazgos por aumento de la tasa de cancelación.
+        for _, fila in alertas_cancelacion.iterrows():
+
+            periodo = fila["periodo"]
+            tasa_actual = fila["Tasa_cancelacion (%)"]
+            tasa_anterior = fila["Tasa_anterior (%)"]
+            variacion = fila["Variacion (pp)"]
+            total = int(fila["Total_pedidos"])
+            cancelados = int(fila["Pedidos_cancelados"])
+
+            prioridad = (
+                "Alta"
+                if variacion >= 1.0
+                else "Media"
+            )
+
+            hallazgos.append({
+                "_periodo_orden": periodo,
+                "_prioridad_orden": (
+                    0 if prioridad == "Alta" else 1
+                ),
+                "Prioridad": prioridad,
+                "Hallazgo": "Aumento de cancelaciones",
+                "Período": (
+                    f"{nombres_meses[periodo.month]} {periodo.year}"
+                ),
+                "Evidencia": (
+                    f"La tasa pasó de {tasa_anterior:.2f}% a "
+                    f"{tasa_actual:.2f}% "
+                    f"(aumento de {variacion:.2f} puntos porcentuales). "
+                    f"Pedidos cancelados o no disponibles: "
+                    f"{cancelados} de {total}."
+                ),
+                "Acción sugerida": (
+                    "Revisar la evolución de las cancelaciones y "
+                    "verificar los pedidos del período antes de "
+                    "atribuir una causa."
+                ),
+            })
+
+        # Hallazgos por reseñas bajas.
         if not categorias_resenas_bajas.empty:
+
             if (
                 anio not in (None, "__todos__")
                 and mes not in (None, "__todos__")
@@ -470,12 +628,15 @@ def registrar_callbacks_decisiones_ventas(app, df):
             )
 
             for _, fila in categorias_resenas_bajas.iterrows():
+
                 puntuacion = fila["Puntuacion_promedio"]
                 categoria = fila["product_category_name"]
                 cantidad = int(fila["Resenas_unicas"])
 
                 prioridad = (
-                    "Alta" if puntuacion <= 2.5 else "Media"
+                    "Alta"
+                    if puntuacion <= 2.5
+                    else "Media"
                 )
 
                 hallazgos.append({
@@ -490,25 +651,21 @@ def registrar_callbacks_decisiones_ventas(app, df):
                         f"Puntuación promedio de {puntuacion:.2f}/5 "
                         f"en {cantidad} reseñas únicas."
                     ),
-                    "Acción sugerida": "Cruzar reseñas con entregas y vendedores antes de atribuir una causa."
+                    "Acción sugerida": (
+                        "Revisar las reseñas de la categoría y "
+                        "considerar la puntuación como una señal "
+                        "para analizar la experiencia del cliente."
+                    ),
                 })
 
-        # Ordenar por período más reciente y prioridad alta primero.
+        # Ordenar por período más reciente y, dentro de cada
+        # período, mostrar primero los hallazgos de prioridad alta.
         hallazgos.sort(
             key=lambda fila: (
                 fila["_periodo_orden"],
-                fila["_prioridad_orden"]
+                -fila["_prioridad_orden"],
             ),
-            reverse=False
-        )
-
-        # Ordenar primero por fecha descendente y luego por prioridad.
-        hallazgos.sort(
-            key=lambda fila: fila["_prioridad_orden"]
-        )
-        hallazgos.sort(
-            key=lambda fila: fila["_periodo_orden"],
-            reverse=True
+            reverse=True,
         )
 
         columnas = [
@@ -518,7 +675,7 @@ def registrar_callbacks_decisiones_ventas(app, df):
                 "Hallazgo",
                 "Período",
                 "Evidencia",
-                "Acción sugerida"
+                "Acción sugerida",
             ]
         ]
 
@@ -540,5 +697,5 @@ def registrar_callbacks_decisiones_ventas(app, df):
             fig_facturacion,
             fig_categorias,
             columnas,
-            datos_tabla
+            datos_tabla,
         )

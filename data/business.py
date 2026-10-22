@@ -76,3 +76,39 @@ def cargar_clientes():
             ON c.customer_unique_id = o.customer_id
         ORDER BY o.purchase_date, o.order_id
     """, ["purchase_date"], ["product_value", "items", "review_score"])
+
+
+@lru_cache(maxsize=1)
+def cargar_clientes_gold():
+    return _read_snapshot("""
+        SELECT
+            customer_unique_id AS customer_id,
+            total_orders,
+            total_items,
+            total_spent,
+            avg_order_value,
+            avg_freight,
+            avg_installments,
+            preferred_payment_type,
+            first_purchase_date,
+            last_purchase_date,
+            categories_count,
+            sellers_count,
+            avg_review_score,
+            repeat_customer,
+            customer_segment
+        FROM gld_customer_analytics
+        ORDER BY customer_unique_id
+    """,
+    ["first_purchase_date", "last_purchase_date"],
+    [
+        "total_orders",
+        "total_items",
+        "total_spent",
+        "avg_order_value",
+        "avg_freight",
+        "avg_installments",
+        "categories_count",
+        "sellers_count",
+        "avg_review_score",
+    ])
