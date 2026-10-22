@@ -14,6 +14,8 @@ from data.business_metrics import (
     agrupar_clientes,
 )
 
+TODOS = "__todos__"
+
 
 def number(value, decimals=0, suffix=""):
     if value is None or pd.isna(value):
@@ -155,6 +157,132 @@ def findings(items):
     )
 
 
+def grafico_compradores_por_periodo(orders, month_selected):
+    """Agrupa por día si hay un mes específico; en caso contrario, por mes."""
+    if orders.empty:
+        return None
+
+    data = orders.copy()
+    data["purchase_date"] = pd.to_datetime(
+        data["purchase_date"],
+        errors="coerce",
+    )
+    data = data.dropna(subset=["purchase_date"])
+
+    if data.empty:
+        return None
+
+    if month_selected:
+        data["period"] = data["purchase_date"].dt.normalize()
+        data = data.groupby("period", as_index=False).agg(
+            customers=("customer_id", "nunique"),
+        )
+        data["period_label"] = data["period"].dt.strftime("%d/%m")
+        x_title = "Día de compra"
+    else:
+        data["period"] = (
+            data["purchase_date"].dt.to_period("M").dt.to_timestamp()
+        )
+        data = data.groupby("period", as_index=False).agg(
+            customers=("customer_id", "nunique"),
+        )
+        data["period_label"] = data["period"].dt.strftime("%m/%Y")
+        x_title = "Mes de compra"
+
+    data = data.sort_values("period")
+
+    return px.line(
+        data,
+        x="period_label",
+        y="customers",
+        markers=True,
+        labels={
+            "period_label": x_title,
+            "customers": "Compradores únicos",
+        },
+    )
+
+
+def grafico_gasto_por_periodo(orders, month_selected):
+    """Calcula el gasto por comprador único para cada día o mes."""
+    if orders.empty:
+        return None
+
+    data = orders.copy()
+    data["purchase_date"] = pd.to_datetime(
+        data["purchase_date"],
+        errors="coerce",
+    )
+    data = data.dropna(subset=["purchase_date"])
+
+    if data.empty:
+        return None
+
+    if month_selected:
+        data["period"] = data["purchase_date"].dt.normalize()
+        data = data.groupby("period", as_index=False).agg(
+            customers=("customer_id", "nunique"),
+            spent=("product_value", "sum"),
+        )
+        data["period_label"] = data["period"].dt.strftime("%d/%m")
+        x_title = "Día de compra"
+    else:
+        data["period"] = (
+            data["purchase_date"].dt.to_period("M").dt.to_timestamp()
+        )
+        data = data.groupby("period", as_index=False).agg(
+            customers=("customer_id", "nunique"),
+            spent=("product_value", "sum"),
+        )
+        data["period_label"] = data["period"].dt.strftime("%m/%Y")
+        x_title = "Mes de compra"
+
+    data = data.sort_values("period")
+    data["average_spent"] = (
+        data["spent"] / data["customers"].where(data["customers"] > 0)
+    )
+
+    return px.line(
+        data,
+        x="period_label",
+        y="average_spent",
+        markers=True,
+        labels={
+            "period_label": x_title,
+            "average_spent": "Gasto por comprador (R$)",
+        },
+    )
+
+
+def grafico_distribucion_segmentos(profiles):
+    """Distribución de compradores únicos por segmento recalculado."""
+    if profiles.empty or "segment" not in profiles.columns:
+        return None
+
+    data = (
+        profiles.assign(
+            segment=profiles["segment"].fillna("Sin información")
+        )
+        .groupby("segment", as_index=False)
+        .agg(customers=("customer_id", "nunique"))
+        .sort_values("customers", ascending=False)
+    )
+
+    if data.empty:
+        return None
+
+    return px.pie(
+        data,
+        names="segment",
+        values="customers",
+        hole=0.35,
+        labels={
+            "segment": "Segmento",
+            "customers": "Clientes",
+        },
+    )
+
+
 def customers_content(
     orders,
     view,
@@ -162,6 +290,8 @@ def customers_content(
     min_sample,
     recency_days,
     reference,
+    year=TODOS,
+    month=TODOS,
 ):
     """Construye la vista solicitada con resultados agregados de clientes."""
     profiles = perfil_clientes(orders, reference)
@@ -268,50 +398,63 @@ def customers_content(
         ))
 
     if view == "gerencial":
-        monthly = orders.assign(
-            period=orders["purchase_date"].dt.to_period("M").astype(str)
+        month_selected = month not in (None, TODOS)
+
+        monthly_fig = grafico_compradores_por_periodo(
+            orders,
+            month_selected,
+        )
+        spending_fig = grafico_gasto_por_periodo(
+            orders,
+            month_selected,
+        )
+        segments_fig = grafico_distribucion_segmentos(profiles)
+
+        if month_selected:
+            period_label = "por día"
+        else:
+            period_label = "por mes"
+
+        # Gráfico principal: ocupa todo el ancho disponible.
+        content.append(
+            html.Div(
+                chart(
+                    monthly_fig,
+                    f"Compradores activos {period_label}",
+                    height=390,
+                ),
+                style={"width": "100%", "minWidth": "0"},
+            )
         )
 
-        monthly = monthly.groupby("period", as_index=False).agg(
-            customers=("customer_id", "nunique"),
-            spent=("product_value", "sum"),
+        # Segunda fila: gasto promedio y distribución por segmentos.
+        content.append(
+            html.Div([
+                chart(
+                    spending_fig,
+                    f"Evolución del gasto promedio por cliente {period_label}",
+                    height=350,
+                ),
+                chart(
+                    segments_fig,
+                    "Distribución de clientes por segmento",
+                    height=350,
+                ),
+            ], className="business-charts", style={
+                "display": "grid",
+                "gridTemplateColumns": "repeat(2, minmax(0, 1fr))",
+                "gap": "16px",
+                "width": "100%",
+                "alignItems": "start",
+            })
         )
-        monthly["average_spent"] = monthly["spent"] / monthly["customers"]
-
-        monthly_fig = px.line(
-            monthly,
-            x="period",
-            y="customers",
-            markers=True,
-            labels={
-                "period": "Mes de compra",
-                "customers": "Compradores únicos",
-            },
-        )
-
-        spending_fig = px.line(
-            monthly, x="period", y="average_spent", markers=True,
-            labels={"period": "Mes de compra", "average_spent": "Gasto por comprador (R$)"},
-        )
-
-        content.append(html.Div([
-            chart(
-                monthly_fig,
-                "Compradores activos por mes",
-                height=390,
-            ),
-            chart(
-                spending_fig,
-                "Evolución del gasto promedio por cliente",
-                height=390,
-            ),
-        ], className="business-charts"))
 
         content.append(html.P(
-            "Un cliente puede comprar en varios meses, por lo que los "
-            "compradores mensuales no deben sumarse para calcular clientes "
-            "únicos del período. La recurrencia observada tampoco equivale "
-            "a una tasa de retención por cohortes.",
+            "Los compradores se cuentan como clientes únicos dentro de cada "
+            "día o mes. Un cliente puede aparecer en varios períodos, por lo "
+            "que esos valores no deben sumarse para obtener clientes únicos "
+            "del período completo. El gasto promedio por período divide el "
+            "valor de los productos por los compradores únicos de ese período.",
             className="business-note",
         ))
 
