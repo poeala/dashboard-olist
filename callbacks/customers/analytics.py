@@ -5,7 +5,7 @@ import logging
 import pandas as pd
 import plotly.express as px
 
-from dash import Input, Output, State, ctx
+from dash import Input, Output, State, ctx, html
 from dash.dash_table.Format import Format, Scheme
 from dash.exceptions import PreventUpdate
 
@@ -21,6 +21,7 @@ from reportlab.platypus import (
 from reportlab.lib.styles import getSampleStyleSheet
 
 from data.business import cargar_clientes_gold
+from components.customer_analysis import customer_analysis
 
 logger = logging.getLogger(__name__)
 
@@ -502,6 +503,23 @@ def registrar_callbacks_analitica_clientes(app):
     )
     def limpiar_filtros(dimension, secundaria, n_clicks):
         return "", ""
+
+    @app.callback(
+        Output("clientes_patrones_analitica", "children"),
+        Input("clientes_analitica_dimension", "value"),
+        Input("clientes_analitica_dimension_secundaria", "value"),
+        Input("clientes_filtro_dimension", "value"),
+        Input("clientes_filtro_dimension_secundaria", "value"),
+    )
+    def actualizar_patrones(dimension, secundaria, filtro_principal, filtro_secundario):
+        try:
+            df = _filtrar_dimensiones(
+                _preparar_datos(), dimension, secundaria, filtro_principal, filtro_secundario,
+            )
+            return customer_analysis(df)
+        except Exception:
+            logger.exception("Error al actualizar patrones de clientes")
+            return html.Div("No se pudieron cargar los patrones de clientes.", role="alert")
 
     # Tabla y gráfico.
     @app.callback(

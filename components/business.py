@@ -13,6 +13,7 @@ from components.charts import aplicar_estilo_grafico
 from components.logistics_map import mapa_logistica_regiones
 from data.business_metrics import (
     pedidos_logistica, resumen_logistica, agrupar_logistica,
+    evaluar_regla_logistica, sensibilidad_logistica,
     perfil_clientes, resumen_clientes, agrupar_clientes,
 )
 
@@ -268,6 +269,20 @@ def logistics_content(rows, view, dimension, min_sample, reference):
             "registrados, no costos operativos ni márgenes.",
             className="business-note",
         ),
+        html.Div([
+            html.Strong("Alcance del análisis logístico"),
+            html.P(
+                "Gold contiene una fila por pedido y vendedor, pero la fecha de entrega "
+                "corresponde al pedido completo. Las tasas describen retrasos en pedidos "
+                "asociados a cada grupo: permiten estudiar asociaciones con vendedores "
+                "y distancias, pero no atribuir automáticamente un retraso a un vendedor particular."
+            ),
+            html.P(
+                "Cada pedido se cuenta una vez en el total y una vez dentro de cada grupo. "
+                "Puede aparecer en varios vendedores, orígenes o rangos de distancia; "
+                "sus conteos no se suman para obtener el total. Las distancias son estimadas."
+            ),
+        ], className="business-table"),
         cards([
             (
                 "Fletes realizados",
@@ -443,14 +458,13 @@ def logistics_content(rows, view, dimension, min_sample, reference):
         ], className="business-charts"))
 
     else:
-        eligible_groups = groups[groups["eligible"] >= min_sample]
-        limit = max(10, (stats["late_pct"] or 0) + 5)
+        limit, selected = evaluar_regla_logistica(groups, stats["late_pct"], min_sample)
         alerts = (
-            eligible_groups[eligible_groups["late_pct"] > limit]
+            groups[selected]
             .sort_values("late_pct", ascending=False)
         )
         items = [{
-            "finding": f"Retrasos elevados: {r['group']}",
+            "finding": f"Pedidos asociados con retrasos elevados: {r['group']}",
             "evidence": (
                 f"{number(r['late'])}/{number(r['eligible'])} entregas "
                 f"({number(r['late_pct'], 2)} %). "
@@ -460,14 +474,50 @@ def logistics_content(rows, view, dimension, min_sample, reference):
                 "Revisar rutas, promesas de entrega y composición de "
                 "pedidos antes de atribuir responsabilidades."
             ),
-        } for _, r in alerts.head(12).iterrows()]
+        } for _, r in alerts.iterrows()]
 
         content.append(findings(items))
         content.append(html.P(
-            f"Regla: tasa de retraso superior al mayor entre 10 % y el "
-            f"promedio seleccionado + 5 puntos; al menos {min_sample} "
-            "entregas comparables por grupo.",
+            f"Regla base: tasa de retraso estrictamente superior a max(10 %, promedio + 5 pp), "
+            f"con al menos {min_sample} entregas comparables por grupo. "
+            f"Referencia: {number(stats['late'])}/{number(stats['eligible'])} pedidos únicos "
+            f"con ambas fechas ({number(stats['late_pct'], 2)} %); "
+            f"umbral efectivo: {number(limit, 2)} %. "
+            "La referencia usa todos los pedidos comparables filtrados, incluidos los de grupos pequeños; "
+            "no es un promedio de las tasas de los grupos. Los cálculos usan valores sin redondear.",
             className="business-note",
+        ))
+        content.append(html.P(
+            "El piso de 10 % evita seleccionar tasas bajas cuando la referencia es baja; "
+            "el margen de 5 puntos exige una diferencia descriptiva respecto de la referencia. "
+            "Son elecciones exploratorias para priorizar revisiones, sin validación empírica "
+            "como umbral óptimo, SLA o prueba de significación. El mínimo de casos reduce "
+            "la exposición a grupos muy pequeños, pero no garantiza precisión. "
+            "No se ajusta por ruta, distancia, época ni composición de pedidos.",
+            className="business-note",
+        ))
+        sensitivity, membership = sensibilidad_logistica(groups, stats["late_pct"], min_sample)
+        content.append(table(
+            sensitivity,
+            {"scenario": "Escenario", "floor": "Piso (%)", "margin": "Margen (pp)",
+             "limit": "Umbral efectivo (%)", "evaluable": "Grupos evaluables",
+             "selected": "Seleccionados", "retained": "Permanecen vs. base",
+             "entered": "Entran vs. base", "exited": "Salen vs. base"},
+            "Sensibilidad de la regla de prioridad",
+            "Se modifica un parámetro por vez y se mantienen los filtros, la agrupación, "
+            "la referencia y el mínimo de casos. Se comparan todos los grupos, sin recortar a los primeros 12. "
+            "Si cambiar el piso no modifica el umbral efectivo, domina la referencia más el margen. "
+            "Sin fechas comparables no hay grupos evaluables.",
+        ))
+        content.append(table(
+            membership,
+            {"group": "Grupo", "eligible": "Entregas comparables", "late_pct": "Retrasos (%)",
+             "Base": "Base", "Piso 5 %": "Piso 5 %", "Piso 15 %": "Piso 15 %",
+             "Margen +2 pp": "Margen +2 pp", "Margen +10 pp": "Margen +10 pp"},
+            "Selección de cada grupo por escenario",
+            "No evaluable indica muestra insuficiente o ausencia de datos comparables. "
+            "La estabilidad entre escenarios no demuestra causalidad ni eficacia de una intervención. "
+            "Los grupos pueden compartir pedidos; sus tamaños no son aditivos.",
         ))
 
     if view != "gerencial":
@@ -486,16 +536,6 @@ def logistics_content(rows, view, dimension, min_sample, reference):
             "Detalle logístico",
             "Los vacíos indican ausencia de datos comparables.",
         ))
-
-        if dimension != "customer_state":
-            content.append(html.P(
-                "Un pedido puede pertenecer a varios vendedores, orígenes "
-                "o rangos de distancia; no sumar sus conteos para obtener "
-                "el total. La fecha de entrega corresponde al pedido "
-                "completo, no a un envío individual del vendedor. "
-                "Las distancias son estimadas.",
-                className="business-note",
-            ))
 
     return html.Div(content)
 

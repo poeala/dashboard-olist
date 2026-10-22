@@ -104,6 +104,44 @@ def agrupar_logistica(rows, dimension="customer_state"):
     return stats.sort_values(["orders", "group"], ascending=[False, True])
 
 
+def evaluar_regla_logistica(groups, baseline_pct, min_sample=30, floor_pct=10, margin_pp=5):
+    """Regla descriptiva; la referencia proviene de pedidos únicos, no de grupos."""
+    limit = None if baseline_pct is None or pd.isna(baseline_pct) else max(floor_pct, baseline_pct + margin_pp)
+    eligible = groups["eligible"].ge(min_sample) & groups["late_pct"].notna()
+    selected = eligible & (groups["late_pct"].gt(limit) if limit is not None else False)
+    return limit, selected
+
+
+def sensibilidad_logistica(groups, baseline_pct, min_sample=30):
+    """Varía un parámetro por vez, manteniendo datos, referencia y mínimo de casos."""
+    scenarios = (
+        ("Base", 10, 5),
+        ("Piso 5 %", 5, 5),
+        ("Piso 15 %", 15, 5),
+        ("Margen +2 pp", 10, 2),
+        ("Margen +10 pp", 10, 10),
+    )
+    _, base_mask = evaluar_regla_logistica(groups, baseline_pct, min_sample)
+    base = set(groups.loc[base_mask, "group"])
+    detail = groups[["group", "eligible", "late_pct"]].copy()
+    enough = groups["eligible"].ge(min_sample) & groups["late_pct"].notna()
+    summaries = []
+    for name, floor, margin in scenarios:
+        limit, mask = evaluar_regla_logistica(groups, baseline_pct, min_sample, floor, margin)
+        selected = set(groups.loc[mask, "group"])
+        summaries.append({
+            "scenario": name, "floor": floor, "margin": margin, "limit": limit,
+            "evaluable": int(enough.sum()) if limit is not None else 0,
+            "selected": len(selected), "retained": len(selected & base),
+            "entered": len(selected - base), "exited": len(base - selected),
+        })
+        detail[name] = "No evaluable"
+        if limit is not None:
+            detail.loc[enough, name] = "No seleccionado"
+            detail.loc[mask, name] = "Seleccionado"
+    return pd.DataFrame(summaries), detail
+
+
 def perfil_clientes(orders, reference_date):
     usable = orders[orders["customer_id"].notna()].drop_duplicates(["customer_id", "order_id"]).copy()
     usable["valid_review"] = usable["review_score"].where(usable["review_score"].between(1, 5))

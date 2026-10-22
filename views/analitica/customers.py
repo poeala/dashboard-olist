@@ -147,8 +147,8 @@ def crear_vista_analitica_clientes():
                                 },
                             ),
                             html.P(
-                                "Analizá los clientes por segmento, última compra "
-                                "y forma de pago preferida.",
+                                "Explorá segmentación, recurrencia, distribución del gasto "
+                                "y relaciones entre variables.",
                                 style={
                                     "margin": "0",
                                     "fontSize": "12px",
@@ -460,6 +460,18 @@ def crear_vista_analitica_clientes():
                     "display": "none",
                 },
             ),
+
+            html.H3("Patrones de comportamiento"),
+            html.P(
+                "Historial Gold de los clientes seleccionados por los filtros de la tabla. "
+                "El año corresponde a la última compra, no al período del gasto. "
+                "Recurrencia: al menos dos pedidos entre clientes con pedidos válidos. "
+                "Cada burbuja agrupa clientes del mismo segmento y frecuencia; "
+                "su tamaño indica cantidad de clientes y su altura, gasto promedio. "
+                "Las relaciones son descriptivas y no prueban causalidad.",
+                className="business-note",
+            ),
+            dcc.Loading(html.Div(id="clientes_patrones_analitica"), type="circle"),
 
             # Gráfico
             html.Div(

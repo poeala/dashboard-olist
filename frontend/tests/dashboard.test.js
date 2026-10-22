@@ -19,7 +19,7 @@ test('cada enlace conserva su área y vista; áreas inválidas vuelven a Ventas'
     }
   }
   assert.equal(selectedArea('?area=desconocida').id, 'ventas');
-  assert.equal(selectedArea('?area=pagos').id, 'ventas');
+  assert.equal(selectedArea('?area=pagos').id, 'pagos');
 });
 test('el HTML del fallback de una SPA no cuenta como un backend saludable', async (t) => {
   t.mock.method(globalThis, 'fetch', async () => new Response('<html></html>'));

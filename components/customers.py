@@ -255,16 +255,17 @@ def customers_content(
         )
         return html.Div(content)
 
-    threshold = profiles.attrs["high_value_threshold"]
+    if view != "gerencial":
+        threshold = profiles.attrs["high_value_threshold"]
 
-    content.append(html.P(
-        f"Segmentación del período: recurrente = al menos dos pedidos; "
-        f"alto valor = gasto igual o superior al percentil 75 "
-        f"({money(threshold)}). La recencia se calcula al {reference_text}, "
-        "no a la fecha actual. El segmento Gold conserva la clasificación "
-        "histórica y puede incluir compras fuera del período seleccionado.",
-        className="business-note",
-    ))
+        content.append(html.P(
+            f"Segmentación del período: recurrente = al menos dos pedidos; "
+            f"alto valor = gasto igual o superior al percentil 75 "
+            f"({money(threshold)}). La recencia se calcula al {reference_text}, "
+            "no a la fecha actual. El segmento Gold conserva la clasificación "
+            "histórica y puede incluir compras fuera del período seleccionado.",
+            className="business-note",
+        ))
 
     if view == "gerencial":
         monthly = orders.assign(
@@ -272,10 +273,10 @@ def customers_content(
         )
 
         monthly = monthly.groupby("period", as_index=False).agg(
-            customers=("customer_id", "nunique")
+            customers=("customer_id", "nunique"),
+            spent=("product_value", "sum"),
         )
-
-        segments = agrupar_clientes(profiles, "segment")
+        monthly["average_spent"] = monthly["spent"] / monthly["customers"]
 
         monthly_fig = px.line(
             monthly,
@@ -288,15 +289,9 @@ def customers_content(
             },
         )
 
-        segments_fig = px.pie(
-            segments,
-            names="group",
-            values="customers",
-            hole=.55,
-            labels={
-                "group": "Segmento",
-                "customers": "Clientes",
-            },
+        spending_fig = px.line(
+            monthly, x="period", y="average_spent", markers=True,
+            labels={"period": "Mes de compra", "average_spent": "Gasto por comprador (R$)"},
         )
 
         content.append(html.Div([
@@ -306,8 +301,8 @@ def customers_content(
                 height=390,
             ),
             chart(
-                segments_fig,
-                "Distribución de segmentos de clientes",
+                spending_fig,
+                "Evolución del gasto promedio por cliente",
                 height=390,
             ),
         ], className="business-charts"))

@@ -8,6 +8,7 @@ export const areas = [
   { id: 'ventas', name: 'Ventas', icon: 'bag', overline: 'PANORAMA COMERCIAL', title: 'Una perspectiva para cada decisión', description: 'Facturación, categorías y evolución del negocio.' },
   { id: 'logistica', name: 'Logística', icon: 'truck', overline: 'DESEMPEÑO LOGÍSTICO', title: 'De la compra a la entrega', description: 'Tiempos, retrasos y fletes para explorar el desempeño de las entregas.' },
   { id: 'clientes', name: 'Clientes', icon: 'people', overline: 'ANÁLISIS DE CLIENTES', title: 'Conocer a quienes compran', description: 'Frecuencia, valor de compra y segmentos del período seleccionado.' },
+  { id: 'pagos', name: 'Pagos', icon: 'credit-card', overline: 'PAGOS · BUSINESS INTELLIGENCE', title: 'Comportamiento y oportunidades de pago', description: 'Medios, cuotas y valor de compra para identificar oportunidades comerciales.' },
 ];
 
 export function selectedArea(search) {
