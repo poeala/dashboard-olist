@@ -102,6 +102,11 @@ class SalesTests(unittest.TestCase):
 
 
 class PresentationTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from dash import Dash
+        cls.app = Dash(__name__, url_base_pathname="/dashboard/")
+
     def test_all_views_serialize_for_populated_and_empty_periods(self):
         for empty in (False, True):
             for view in ("gerencial", "analitica", "decisiones"):

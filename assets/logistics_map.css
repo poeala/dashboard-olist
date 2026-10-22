@@ -1,0 +1,22 @@
+.logistics-map-card { position: relative; }
+.logistics-map-heading { padding: 18px 18px 12px; }
+.logistics-map-heading h3 { margin: 0 0 12px; font-size: 16px; color: #003D7C; }
+.logistics-map-heading label { display: block; font-size: 12px; margin-bottom: 6px; color: #526175; }
+.logistics-region-map { height: 390px; width: 100%; background: #edf2f7; z-index: 0; }
+.logistics-map-legend { background: rgba(255,255,255,.96); padding: 9px 11px; border-radius: 6px; box-shadow: 0 1px 8px #003d7c20; font: 11px/1.6 Arial, sans-serif; color: #334155; }
+.logistics-map-legend strong { display: block; margin-bottom: 4px; }
+.logistics-map-legend i { display: inline-block; width: 12px; height: 12px; margin-right: 7px; vertical-align: middle; border: 1px solid #0001; }
+.logistics-map-reset { background: white; border: 1px solid #b8c5d3; border-radius: 4px; padding: 7px; cursor: pointer; color: #003D7C; font: 12px Arial, sans-serif; }
+.logistics-map-reset:focus-visible, .logistics-region-map path:focus-visible { outline: 3px solid #003D7C; outline-offset: 2px; }
+.logistics-map-status.business-note, .logistics-map-note.business-note { margin: 10px 18px; }
+.logistics-map-details { margin: 12px 18px; font-size: 12px; color: #003D7C; }
+.logistics-map-details summary { cursor: pointer; }
+.logistics-map-table { overflow-x: auto; margin-top: 10px; }
+.logistics-map-table table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+.logistics-map-table th, .logistics-map-table td { padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+.logistics-map-table thead { background: #e8eff7; }
+@media (max-width: 480px) {
+    .logistics-region-map { height: 420px; }
+    .logistics-map-heading { padding: 14px; }
+    .logistics-map-legend { font-size: 10px; padding: 6px 8px; }
+}

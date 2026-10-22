@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 from dash import dcc, html, dash_table
 
 from components.charts import aplicar_estilo_grafico
+from components.logistics_map import mapa_logistica_regiones
 from data.business_metrics import (
     pedidos_logistica, resumen_logistica, agrupar_logistica,
     perfil_clientes, resumen_clientes, agrupar_clientes,
@@ -299,6 +300,8 @@ def logistics_content(rows, view, dimension, min_sample, reference):
                 className="business-empty",
             )
         )
+        if view == "gerencial":
+            content.append(mapa_logistica_regiones(orders))
         return html.Div(content)
 
     if view == "gerencial":
@@ -374,12 +377,6 @@ def logistics_content(rows, view, dimension, min_sample, reference):
         )
         destinations_fig.update_traces(textposition="outside")
 
-        destination_map = mapa_pedidos_por_estado(
-            rows,
-            "customer_state",
-            "Destinos con más pedidos",
-        )
-
         content.append(
             html.Div([
                 chart(
@@ -387,11 +384,7 @@ def logistics_content(rows, view, dimension, min_sample, reference):
                     "Destinos con más pedidos",
                     height=430,
                 ),
-                chart(
-                    destination_map,
-                    "Distribución geográfica de pedidos",
-                    height=430,
-                ),
+                mapa_logistica_regiones(orders),
             ], className="business-charts")
         )
 
@@ -399,7 +392,7 @@ def logistics_content(rows, view, dimension, min_sample, reference):
             f"{number(stats['without_delivery'])} pedidos no tienen fecha "
             "de entrega. No se consideran entregas puntuales ni retrasadas. "
             "Las barras muestran los 10 estados con más pedidos; el mapa "
-            "cuenta pedidos únicos por estado. Son datos históricos, no "
+            "cuenta pedidos únicos por región de destino. Son datos históricos, no "
             "una cola operativa actual.",
             className="business-note",
         ))
