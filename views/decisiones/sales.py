@@ -1,11 +1,10 @@
-
 # Vista de toma de decisiones de ventas
 from dash import html, dcc, dash_table
 
 
 def crear_vista_decisiones_ventas():
 
-    def tarjeta(titulo, componente_id):
+    def tarjeta(titulo, subtitulo, componente_id):
         return html.Div(
             [
                 html.P(
@@ -23,6 +22,14 @@ def crear_vista_decisiones_ventas():
                         "fontSize": "25px",
                         "margin": "0"
                     }
+                ),
+                html.P(
+                    subtitulo,
+                    style={
+                        "fontSize": "11px",
+                        "color": "#888",
+                        "margin": "8px 0 0 0"
+                    }
                 )
             ],
             style={
@@ -35,7 +42,7 @@ def crear_vista_decisiones_ventas():
                 "boxSizing": "border-box"
             }
         )
-
+        
     def selector(titulo, componente_id):
         return html.Div(
             [
@@ -127,18 +134,22 @@ def crear_vista_decisiones_ventas():
                 [
                     tarjeta(
                         "Hallazgos detectados",
+                        "Situaciones que requieren revisión.",
                         "decisiones_total_alertas"
                     ),
                     tarjeta(
                         "Categorías con reseñas bajas",
+                        "Promedio de 3,5 puntos o menos sobre 5.",
                         "decisiones_categorias_resenas"
                     ),
                     tarjeta(
                         "Caídas de facturación",
+                        "Meses con una disminución superior al 10 %.",
                         "decisiones_caida_facturacion"
                     ),
                     tarjeta(
                         "Tasa de cancelación",
+                        "Porcentaje de pedidos cancelados o no disponibles.",
                         "decisiones_tasa_cancelacion"
                     )
                 ],

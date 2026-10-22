@@ -1,6 +1,3 @@
-
-from dash import dcc, html
-
 from dash import dcc, html
 
 
@@ -52,8 +49,93 @@ def crear_vista_negocio(area, vista, anios):
     )
     month_options = (
         [{"label": "Todos", "value": "__todos__"}]
-        + [{"label": month, "value": i} for i, month in enumerate(MONTHS, 1)]
+        + [
+            {"label": month, "value": i}
+            for i, month in enumerate(MONTHS, 1)
+        ]
     )
+
+    # La agrupación no se muestra en Gerencial ni en Decisiones.
+    # Se conserva el componente para mantener la compatibilidad con callbacks.
+    mostrar_agrupacion = vista not in ("gerencial", "decisiones")
+
+    filtros_agrupacion = html.Div(
+        dropdown(
+            "Agrupar por",
+            "business-dimension",
+            [
+                {"label": label, "value": value}
+                for label, value in dimensions
+            ],
+            dimensions[0][1],
+        ),
+        style={} if mostrar_agrupacion else {"display": "none"},
+    )
+
+    filtros_periodo = html.Div([
+        dropdown(
+            "Año de compra",
+            "business-year",
+            year_options,
+            "__todos__",
+        ),
+        dropdown(
+            "Mes de compra",
+            "business-month",
+            month_options,
+            "__todos__",
+            disabled=True,
+        ),
+    ], className="business-period-filters")
+
+    filtros_superiores = html.Div([
+        filtros_agrupacion,
+        filtros_periodo,
+    ], className="business-heading-filters", style={
+        "display": "flex",
+        "alignItems": "flex-end",
+        "gap": "16px",
+        "flexWrap": "wrap",
+    })
+
+    # Estos controles solo se utilizan en Decisiones de Clientes.
+    mostrar_filtros_clientes = vista == "decisiones" and not logistics
+
+    filtros_decisiones = html.Div([
+        html.Div([
+            html.Label(
+                "Mínimo de casos para alertas",
+                htmlFor="business-min-sample",
+            ),
+            dcc.Input(
+                id="business-min-sample",
+                type="number",
+                min=5,
+                max=10000,
+                step=1,
+                value=30,
+            ),
+        ], className="business-filter"),
+
+        html.Div([
+            html.Label(
+                "Días sin compra al corte",
+                htmlFor="business-recency",
+            ),
+            dcc.Input(
+                id="business-recency",
+                type="number",
+                min=1,
+                max=3650,
+                step=1,
+                value=90,
+            ),
+        ], className="business-filter"),
+    ], className="business-filters", style={
+        "display": "flex" if mostrar_filtros_clientes else "none",
+        "gap": "16px",
+        "flexWrap": "wrap",
+    })
 
     return html.Div([
         dcc.Store(id="business-area", data=area),
@@ -65,72 +147,10 @@ def crear_vista_negocio(area, vista, anios):
                 html.P(description, className="business-subtitle"),
             ], className="business-heading-text"),
 
-            html.Div([
-                dropdown(
-                    "Año de compra",
-                    "business-year",
-                    year_options,
-                    "__todos__",
-                ),
-                dropdown(
-                    "Mes de compra",
-                    "business-month",
-                    month_options,
-                    "__todos__",
-                    disabled=True,
-                ),
-            ], className="business-period-filters"),
+            filtros_superiores,
         ], className="business-heading business-heading-row"),
 
-        html.Div([
-            html.Div(
-                dropdown(
-                    "Agrupar por",
-                    "business-dimension",
-                    [
-                        {"label": label, "value": value}
-                        for label, value in dimensions
-                    ],
-                    dimensions[0][1],
-                ),
-                style={"display": "none"} if vista == "gerencial" else {},
-            ),
-
-            html.Div([
-                html.Label(
-                    "Mínimo de casos para alertas",
-                    htmlFor="business-min-sample",
-                ),
-                dcc.Input(
-                    id="business-min-sample",
-                    type="number",
-                    min=5,
-                    max=10000,
-                    step=1,
-                    value=30,
-                ),
-            ], className="business-filter",
-                style={"display": "none"} if vista == "gerencial" else {}),
-
-            html.Div([
-                html.Label(
-                    "Días sin compra al corte",
-                    htmlFor="business-recency",
-                ),
-                dcc.Input(
-                    id="business-recency",
-                    type="number",
-                    min=1,
-                    max=3650,
-                    step=1,
-                    value=90,
-                ),
-            ], className="business-filter",
-                style={
-                    "display": "none"
-                } if logistics or vista != "decisiones" else {}),
-        ], className="business-filters",
-            style={"display": "none"} if vista == "gerencial" else {}),
+        filtros_decisiones,
 
         dcc.Loading(
             html.Div(id="business-content"),

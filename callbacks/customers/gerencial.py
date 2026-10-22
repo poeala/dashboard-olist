@@ -62,6 +62,8 @@ def registrar_callbacks_clientes(app):
                 min_sample,
                 recency,
                 reference,
+                year=year,
+                month=month,
             )
 
         except Exception as exc:
