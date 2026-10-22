@@ -25,6 +25,7 @@ class EmbedTests(unittest.TestCase):
             "/dashboard/assets/00_leaflet/leaflet.js",
             "/dashboard/assets/00_leaflet/leaflet.css",
             "/dashboard/assets/logistics_map.js",
+            "/dashboard/assets/01_logistics_scale.js",
             "/dashboard/assets/br_regions.geojson",
         ):
             with self.subTest(path=path):

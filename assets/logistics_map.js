@@ -7,7 +7,7 @@
     const colors = ["#fff1d6", "#fed28b", "#f99d59", "#e95b3c", "#b51f32"];
     const noData = "#dce3eb";
     const integer = new Intl.NumberFormat("es-AR");
-    const decimal = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 1 });
+    const decimal = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 });
 
     function dispose() {
         if (active) {
@@ -83,10 +83,10 @@
             const key = isRate ? "late_pct" : "orders";
             const maximum = Math.max(1, ...data.regions.map(r => r.orders));
             const step = Math.max(1, Math.ceil(maximum / 5));
+            const rateScale = window.LogisticsMapScale.rateScale(data.regions.map(r => r.late_pct));
             function fill(region) {
-                if (isRate && region.late_pct === null) return noData;
-                const index = isRate ? Math.floor(region.late_pct / 20)
-                    : Math.max(0, Math.ceil(region.orders / step) - 1);
+                if (isRate) return rateScale.colorFor(region.late_pct);
+                const index = Math.max(0, Math.ceil(region.orders / step) - 1);
                 return colors[Math.min(4, index)];
             }
             state.layer = L.geoJSON(geojson, {
@@ -134,14 +134,15 @@
                 const heading = document.createElement("strong");
                 heading.textContent = isRate ? "Retrasos (%)" : "Pedidos";
                 box.append(heading);
-                colors.forEach(function (color, index) {
+                const bins = isRate ? rateScale.bins : colors.map((color, index) => ({
+                    color,
+                    label: integer.format(index === 0 ? 0 : index * step + 1)
+                        + "–" + integer.format((index + 1) * step),
+                }));
+                bins.forEach(function ({ color, label }) {
                     const row = document.createElement("div");
                     const swatch = document.createElement("i");
                     swatch.style.backgroundColor = color;
-                    const low = isRate ? index * 20 : index === 0 ? 0 : index * step + 1;
-                    const high = isRate ? (index + 1) * 20 : (index + 1) * step;
-                    const label = isRate ? decimal.format(low) + "–" + (index < 4 ? "<" : "") + decimal.format(high) + " %"
-                        : integer.format(low) + "–" + integer.format(high);
                     row.append(swatch, document.createTextNode(label)); box.append(row);
                 });
                 if (isRate) {
@@ -154,7 +155,7 @@
                 return box;
             };
             state.legend.addTo(state.map);
-            return isRate ? "Escala fija de 0 a 100 %. Gris: sin entregas comparables."
+            return isRate ? "Escala relativa al período: mayor intensidad = mayor porcentaje de retrasos. Consultá la leyenda al comparar períodos. Gris: sin entregas comparables."
                 : "Mayor intensidad = más pedidos. Escala ajustada al período seleccionado.";
         } catch (error) {
             if (current !== request) return window.dash_clientside.no_update;

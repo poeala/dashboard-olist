@@ -24,4 +24,9 @@ El navegador solo recibe los conteos regionales. Los filtros de compra se
 aplican antes del agrupamiento; los pedidos con varios vendedores cuentan
 una sola vez. Retrasos = tardíos / entregas con ambas fechas × 100; ausencia
 de fechas comparables se representa con gris, y cero retrasos con el tono
-mínimo. La escala de pedidos se recalcula por período; la de retrasos es fija.
+mínimo. Ambas escalas se recalculan por período. La de retrasos divide el
+rango regional observado en hasta cinco intervalos, con precisión de dos
+decimales y colores compartidos entre mapa y leyenda. Valores iguales
+conservan el mismo color; sin datos comparables se usa gris. Los colores
+son relativos al período: para comparar períodos hay que consultar los
+porcentajes y los límites de la leyenda.
