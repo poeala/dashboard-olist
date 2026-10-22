@@ -6,7 +6,10 @@ def crear_vista_analitica_clientes():
     dimensiones = [
         {"label": "Segmento histórico", "value": "gold_segment"},
         {"label": "Año de última compra", "value": "anio_ultima_compra"},
-        {"label": "Tipo de pago preferido", "value": "preferred_payment_type"},
+        {
+            "label": "Tipo de pago preferido",
+            "value": "preferred_payment_type",
+        },
     ]
 
     metricas = [
@@ -23,7 +26,10 @@ def crear_vista_analitica_clientes():
         "marginBottom": "5px",
     }
 
-    estilo_control = {"flex": "1", "minWidth": "180px"}
+    estilo_control = {
+        "flex": "1",
+        "minWidth": "180px",
+    }
 
     estilo_boton = {
         "backgroundColor": "#003D7C",
@@ -56,11 +62,77 @@ def crear_vista_analitica_clientes():
         "height": "auto",
     }
 
+    columnas_variacion = [
+        "Cantidad de clientes - Variación",
+        "Cantidad de clientes - % variación",
+        "Total de pedidos - Variación",
+        "Total de pedidos - % variación",
+        "Gasto total - Variación",
+        "Gasto total - % variación",
+        "Calificación promedio - Variación",
+        "Calificación promedio - % variación",
+    ]
+
+    estilos_variacion = [
+        {
+            "if": {
+                "column_id": columna,
+                "filter_query": f"{{{columna}}} > 0",
+            },
+            "color": "#198754",
+            "fontWeight": "600",
+        }
+        for columna in columnas_variacion
+    ] + [
+        {
+            "if": {
+                "column_id": columna,
+                "filter_query": f"{{{columna}}} < 0",
+            },
+            "color": "#dc3545",
+            "fontWeight": "600",
+        }
+        for columna in columnas_variacion
+    ]
+
+    # La dimensión principal cambia según la agrupación seleccionada.
+    estilos_total = [
+        {
+            "if": {
+                "filter_query": '{Segmento histórico} = "TOTAL"',
+            },
+            "backgroundColor": "#f0f2f5",
+            "fontWeight": "bold",
+            "borderTop": "2px solid #c7ccd4",
+        },
+        {
+            "if": {
+                "filter_query": '{Año de última compra} = "TOTAL"',
+            },
+            "backgroundColor": "#f0f2f5",
+            "fontWeight": "bold",
+            "borderTop": "2px solid #c7ccd4",
+        },
+        {
+            "if": {
+                "filter_query": '{Tipo de pago preferido} = "TOTAL"',
+            },
+            "backgroundColor": "#f0f2f5",
+            "fontWeight": "bold",
+            "borderTop": "2px solid #c7ccd4",
+        },
+    ]
+
     return html.Div(
         [
-            dcc.Download(id="clientes_descargar_analitica_pdf"),
+            dcc.Download(
+                id="clientes_descargar_analitica_pdf"
+            ),
 
-            dcc.Store(id="clientes_estado_detalle_analitica", data=None),
+            dcc.Store(
+                id="clientes_estado_detalle_analitica",
+                data=None,
+            ),
 
             # Encabezado y agrupaciones
             html.Div(
@@ -69,25 +141,38 @@ def crear_vista_analitica_clientes():
                         [
                             html.H2(
                                 "Análisis de clientes",
-                                style={"margin": "0 0 4px 0", "fontSize": "23px"},
+                                style={
+                                    "margin": "0 0 4px 0",
+                                    "fontSize": "23px",
+                                },
                             ),
                             html.P(
                                 "Analizá los clientes por segmento, última compra "
                                 "y forma de pago preferida.",
-                                style={"margin": "0", "fontSize": "12px", "color": "#666"},
+                                style={
+                                    "margin": "0",
+                                    "fontSize": "12px",
+                                    "color": "#666",
+                                },
                             ),
                         ],
-                        style={"flex": "1", "minWidth": "220px"},
+                        style={
+                            "flex": "1",
+                            "minWidth": "220px",
+                        },
                     ),
                     html.Div(
                         [
                             html.Div(
                                 [
-                                    html.Label("Agrupar por", style=estilo_label),
+                                    html.Label(
+                                        "Agrupar por",
+                                        style=estilo_label,
+                                    ),
                                     dcc.Dropdown(
                                         id="clientes_analitica_dimension",
                                         options=dimensiones,
-                                        value="gold_segment",
+                                        value="anio_ultima_compra",
                                         clearable=False,
                                     ),
                                 ],
@@ -95,11 +180,17 @@ def crear_vista_analitica_clientes():
                             ),
                             html.Div(
                                 [
-                                    html.Label("Agrupación secundaria", style=estilo_label),
+                                    html.Label(
+                                        "Agrupación secundaria",
+                                        style=estilo_label,
+                                    ),
                                     dcc.Dropdown(
                                         id="clientes_analitica_dimension_secundaria",
                                         options=[
-                                            {"label": "Ninguna", "value": "__ninguna__"}
+                                            {
+                                                "label": "Ninguna",
+                                                "value": "__ninguna__",
+                                            }
                                         ] + dimensiones,
                                         value="__ninguna__",
                                         clearable=False,
@@ -130,16 +221,14 @@ def crear_vista_analitica_clientes():
             # Indicadores
             html.Div(
                 [
-                    html.Label("Indicadores", style=estilo_label),
+                    html.Label(
+                        "Indicadores",
+                        style=estilo_label,
+                    ),
                     dcc.Checklist(
                         id="clientes_analitica_metricas",
                         options=metricas,
-                        value=[
-                            "clientes",
-                            "total_orders",
-                            "total_spent",
-                            "avg_review_score",
-                        ],
+                        value=["clientes"],
                         inline=True,
                         style={
                             "display": "flex",
@@ -148,7 +237,10 @@ def crear_vista_analitica_clientes():
                         },
                     ),
                 ],
-                style={**estilo_tarjeta, "boxShadow": "none"},
+                style={
+                    **estilo_tarjeta,
+                    "boxShadow": "none",
+                },
             ),
 
             # Tabla de resultados
@@ -158,7 +250,10 @@ def crear_vista_analitica_clientes():
                         [
                             html.H3(
                                 "Resultados del análisis",
-                                style={"margin": "0", "fontSize": "16px"},
+                                style={
+                                    "margin": "0",
+                                    "fontSize": "16px",
+                                },
                             ),
                             html.Button(
                                 "Exportar a PDF",
@@ -177,19 +272,20 @@ def crear_vista_analitica_clientes():
                         },
                     ),
 
+                    # Filtros independientes por dimensión.
                     html.Div(
                         [
                             html.Div(
                                 [
                                     html.Label(
-                                        "Buscar en los resultados",
+                                        "Buscar en la agrupación principal",
                                         style=estilo_label,
                                     ),
                                     dcc.Input(
                                         id="clientes_filtro_dimension",
                                         type="text",
                                         value="",
-                                        placeholder="Buscar segmento, año o tipo de pago...",
+                                        placeholder="Buscar en la agrupación principal...",
                                         debounce=True,
                                         style={
                                             "width": "100%",
@@ -200,8 +296,37 @@ def crear_vista_analitica_clientes():
                                         },
                                     ),
                                 ],
-                                style={"flex": "1", "minWidth": "220px"},
+                                style={
+                                    "flex": "1",
+                                    "minWidth": "220px",
+                                },
                             ),
+
+                            html.Div(
+                                [
+                                    html.Label(
+                                        "Buscar en la agrupación secundaria",
+                                        style=estilo_label,
+                                    ),
+                                    dcc.Input(
+                                        id="clientes_filtro_dimension_secundaria",
+                                        type="text",
+                                        value="",
+                                        placeholder="Buscar en la agrupación secundaria...",
+                                        debounce=True,
+                                        style={
+                                            "width": "100%",
+                                            "padding": "8px",
+                                            "boxSizing": "border-box",
+                                            "border": "1px solid #ccc",
+                                            "borderRadius": "5px",
+                                        },
+                                    ),
+                                ],
+                                id="clientes_contenedor_filtro_secundario",
+                                style={"display": "none"},
+                            ),
+
                             html.Button(
                                 "Limpiar filtros",
                                 id="clientes_btn_limpiar_filtros",
@@ -240,10 +365,13 @@ def crear_vista_analitica_clientes():
                         columns=[],
                         data=[],
                         page_size=15,
-                        sort_action="native",
+                        sort_action="custom",
+                        sort_mode="multi",
                         filter_action="none",
                         active_cell=None,
-                        style_table={"overflowX": "auto"},
+                        style_table={
+                            "overflowX": "auto",
+                        },
                         style_cell=estilo_celda,
                         style_header={
                             "fontWeight": "bold",
@@ -256,7 +384,7 @@ def crear_vista_analitica_clientes():
                                 "backgroundColor": "#e8f1fb",
                                 "border": "1px solid #8bb8e8",
                             },
-                        ],
+                        ] + estilos_variacion + estilos_total,
                     ),
 
                     html.Div(
@@ -274,7 +402,10 @@ def crear_vista_analitica_clientes():
                                 },
                             ),
                         ],
-                        style={"marginTop": "10px", "textAlign": "right"},
+                        style={
+                            "marginTop": "10px",
+                            "textAlign": "right",
+                        },
                     ),
                 ],
                 style=estilo_tarjeta,
@@ -285,7 +416,10 @@ def crear_vista_analitica_clientes():
                 [
                     html.H3(
                         "Detalle de clientes",
-                        style={"margin": "0 0 8px 0", "fontSize": "16px"},
+                        style={
+                            "margin": "0 0 8px 0",
+                            "fontSize": "16px",
+                        },
                     ),
                     html.P(
                         "Seleccioná un grupo y pulsá Mostrar detalle.",
@@ -304,7 +438,9 @@ def crear_vista_analitica_clientes():
                         page_action="native",
                         sort_action="native",
                         filter_action="none",
-                        style_table={"overflowX": "auto"},
+                        style_table={
+                            "overflowX": "auto",
+                        },
                         style_cell={
                             **estilo_celda,
                             "fontSize": "12px",
@@ -319,7 +455,10 @@ def crear_vista_analitica_clientes():
                     ),
                 ],
                 id="clientes_contenedor_detalle_analitica",
-                style={**estilo_tarjeta, "display": "none"},
+                style={
+                    **estilo_tarjeta,
+                    "display": "none",
+                },
             ),
 
             # Gráfico

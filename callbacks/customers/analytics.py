@@ -6,6 +6,7 @@ import pandas as pd
 import plotly.express as px
 
 from dash import Input, Output, State, ctx
+from dash.dash_table.Format import Format, Scheme
 from dash.exceptions import PreventUpdate
 
 from reportlab.lib import colors
@@ -83,10 +84,12 @@ def _preparar_datos():
         return df
 
     df["first_purchase_date"] = pd.to_datetime(
-        df["first_purchase_date"], errors="coerce"
+        df["first_purchase_date"],
+        errors="coerce",
     )
     df["last_purchase_date"] = pd.to_datetime(
-        df["last_purchase_date"], errors="coerce"
+        df["last_purchase_date"],
+        errors="coerce",
     )
 
     df["anio_ultima_compra"] = (
@@ -100,8 +103,11 @@ def _preparar_datos():
 
 
 def _filtrar_texto(df, dimension, texto):
-    """Filtra por texto sobre la dimensión principal."""
-    if not texto or not str(texto).strip():
+    """Filtra los datos por el texto de una dimensión."""
+    if df.empty or dimension not in DIMENSIONES:
+        return df
+
+    if texto is None or not str(texto).strip():
         return df
 
     columna = DIMENSIONES[dimension]["columna"]
@@ -113,6 +119,16 @@ def _filtrar_texto(df, dimension, texto):
         .astype(str)
         .str.contains(texto, case=False, regex=False)
     ]
+
+
+def _filtrar_dimensiones(df, dimension, secundaria, filtro_principal, filtro_secundario):
+    """Aplica los filtros de la agrupación principal y la secundaria."""
+    df = _filtrar_texto(df, dimension, filtro_principal)
+
+    if secundaria in DIMENSIONES and secundaria != dimension:
+        df = _filtrar_texto(df, secundaria, filtro_secundario)
+
+    return df
 
 
 def _agrupar(df, dimension, secundaria, metricas):
@@ -166,36 +182,226 @@ def _agrupar(df, dimension, secundaria, metricas):
         for metrica in agregaciones
     })
 
-    return agrupado.rename(columns=nombres)
+    agrupado = agrupado.rename(columns=nombres)
+
+    # Calcular variaciones únicamente cuando la agrupación principal es temporal.
+    if dimension == "anio_ultima_compra":
+        agrupado["_anio_orden"] = pd.to_numeric(
+            agrupado["Año de última compra"],
+            errors="coerce",
+        )
+
+        columnas_variacion = (
+            [DIMENSIONES[secundaria]["label"]]
+            if usar_secundaria
+            else []
+        )
+
+        agrupado = agrupado.sort_values(
+            columnas_variacion + ["_anio_orden"],
+            na_position="last",
+        )
+
+        for metrica in metricas:
+            etiqueta = METRICAS[metrica]["label"]
+
+            if etiqueta not in agrupado.columns:
+                continue
+
+            if columnas_variacion:
+                agrupado[f"{etiqueta} - Variación"] = (
+                    agrupado.groupby(
+                        columnas_variacion,
+                        dropna=False,
+                    )[etiqueta].diff()
+                )
+
+                anterior = (
+                    agrupado.groupby(
+                        columnas_variacion,
+                        dropna=False,
+                    )[etiqueta].shift(1)
+                )
+            else:
+                agrupado[f"{etiqueta} - Variación"] = (
+                    agrupado[etiqueta].diff()
+                )
+
+                anterior = agrupado[etiqueta].shift(1)
+
+            agrupado[f"{etiqueta} - % variación"] = (
+                (agrupado[etiqueta] - anterior)
+                / anterior.where(anterior != 0)
+                * 100
+            )
+
+        agrupado = agrupado.drop(columns=["_anio_orden"])
+
+    else:
+        # Para otras dimensiones no hay una secuencia temporal comparable.
+        for metrica in metricas:
+            etiqueta = METRICAS[metrica]["label"]
+            agrupado[f"{etiqueta} - Variación"] = float("nan")
+            agrupado[f"{etiqueta} - % variación"] = float("nan")
+
+    return agrupado
+
+
+def _calcular_total(df, dimension, secundaria, metricas):
+    """Calcula los indicadores globales de los clientes filtrados."""
+    total = {}
+
+    for metrica in metricas:
+        definicion = METRICAS[metrica]
+        columna = definicion["columna"]
+        etiqueta = definicion["label"]
+
+        if columna not in df.columns:
+            total[etiqueta] = float("nan")
+            continue
+
+        if definicion["agregacion"] == "nunique":
+            total[etiqueta] = df[columna].nunique()
+        elif definicion["agregacion"] == "sum":
+            total[etiqueta] = df[columna].sum()
+        elif definicion["agregacion"] == "mean":
+            total[etiqueta] = df[columna].mean()
+        else:
+            total[etiqueta] = float("nan")
+
+        total[f"{etiqueta} - Variación"] = float("nan")
+        total[f"{etiqueta} - % variación"] = float("nan")
+
+    total[DIMENSIONES[dimension]["label"]] = "TOTAL"
+
+    if secundaria in DIMENSIONES and secundaria != dimension:
+        total[DIMENSIONES[secundaria]["label"]] = ""
+
+    return total
 
 
 def _formatear_tabla(df):
-    """Da formato a los indicadores para mostrarlos en pantalla."""
+    """Mantiene los valores numéricos y redondea los decimales."""
     resultado = df.copy()
 
+    columnas_enteras = {
+        "Cantidad de clientes",
+        "Total de pedidos",
+    }
+
+    columnas_decimales = {
+        "Gasto total",
+        "Calificación promedio",
+    }
+
     for columna in resultado.columns:
-        if columna == "Gasto total":
-            resultado[columna] = resultado[columna].map(
-                lambda valor: (
-                    f"$ {valor:,.2f}" if pd.notna(valor) else "—"
-                )
-            )
+        es_variacion = (
+            columna.endswith(" - Variación")
+            or columna.endswith(" - % variación")
+        )
 
-        elif columna == "Calificación promedio":
-            resultado[columna] = resultado[columna].map(
-                lambda valor: (
-                    f"{valor:.2f}" if pd.notna(valor) else "—"
-                )
-            )
+        es_numerica = (
+            columna in columnas_enteras
+            or columna in columnas_decimales
+            or es_variacion
+        )
 
-        elif columna in {"Cantidad de clientes", "Total de pedidos"}:
-            resultado[columna] = resultado[columna].map(
-                lambda valor: (
-                    f"{valor:,.0f}" if pd.notna(valor) else "—"
-                )
-            )
+        if not es_numerica:
+            continue
+
+        resultado[columna] = pd.to_numeric(
+            resultado[columna],
+            errors="coerce",
+        )
+
+        if columna in columnas_decimales:
+            resultado[columna] = resultado[columna].round(2)
+
+        elif columna.endswith(" - % variación"):
+            resultado[columna] = resultado[columna].round(2)
+
+        elif columna.endswith(" - Variación"):
+            metrica = columna.removesuffix(" - Variación")
+
+            if metrica in columnas_decimales:
+                resultado[columna] = resultado[columna].round(2)
 
     return resultado
+
+
+def _ordenar_tabla_total_al_final(tabla, sort_by, dimension):
+    """Ordena las filas de detalle y conserva TOTAL al final."""
+    if tabla.empty:
+        return tabla
+
+    columna_dimension = DIMENSIONES[dimension]["label"]
+
+    if columna_dimension not in tabla.columns:
+        return tabla
+
+    es_total = tabla[columna_dimension].eq("TOTAL")
+
+    filas = tabla.loc[~es_total].copy()
+    total = tabla.loc[es_total].copy()
+
+    if sort_by:
+        columnas = []
+        direcciones = []
+
+        for criterio in sort_by:
+            columna = criterio.get("column_id")
+            direccion = criterio.get("direction", "asc")
+
+            if columna in filas.columns:
+                columnas.append(columna)
+                direcciones.append(direccion == "asc")
+
+        if columnas:
+            filas = filas.sort_values(
+                by=columnas,
+                ascending=direcciones,
+                na_position="last",
+                kind="mergesort",
+            )
+
+    return pd.concat(
+        [filas, total],
+        ignore_index=True,
+    )
+
+
+def _es_columna_numerica(columna):
+    """Indica si una columna debe tratarse como numérica en Dash."""
+    return (
+        columna in {
+            "Cantidad de clientes",
+            "Total de pedidos",
+            "Gasto total",
+            "Calificación promedio",
+        }
+        or columna.endswith(" - Variación")
+        or columna.endswith(" - % variación")
+    )
+
+
+def _es_columna_decimal(columna):
+    """Indica las columnas que se muestran con dos decimales."""
+    columnas_decimales = {
+        "Gasto total",
+        "Calificación promedio",
+    }
+
+    if columna in columnas_decimales:
+        return True
+
+    if columna.endswith(" - % variación"):
+        return True
+
+    if columna.endswith(" - Variación"):
+        metrica = columna.removesuffix(" - Variación")
+        return metrica in columnas_decimales
+
+    return False
 
 
 def _crear_pdf(titulo, tabla):
@@ -248,7 +454,7 @@ def _crear_pdf(titulo, tabla):
 
 def registrar_callbacks_analitica_clientes(app):
 
-    # Opciones de agrupación secundaria: ninguna o una dimensión distinta.
+    # Opciones de agrupación secundaria.
     @app.callback(
         Output("clientes_analitica_dimension_secundaria", "options"),
         Input("clientes_analitica_dimension", "value"),
@@ -265,16 +471,37 @@ def registrar_callbacks_analitica_clientes(app):
             if clave != dimension
         ]
 
-    # Limpiar la búsqueda al cambiar las agrupaciones o pulsar el botón.
+    # Mostrar el segundo filtro solamente si hay una segunda agrupación.
+    @app.callback(
+        Output("clientes_contenedor_filtro_secundario", "style"),
+        Input("clientes_analitica_dimension", "value"),
+        Input("clientes_analitica_dimension_secundaria", "value"),
+    )
+    def mostrar_filtro_secundario(dimension, secundaria):
+        usar_secundaria = (
+            secundaria in DIMENSIONES
+            and secundaria != dimension
+        )
+
+        if usar_secundaria:
+            return {
+                "flex": "1",
+                "minWidth": "220px",
+            }
+
+        return {"display": "none"}
+
+    # Limpiar los filtros al cambiar las agrupaciones o pulsar Limpiar.
     @app.callback(
         Output("clientes_filtro_dimension", "value"),
+        Output("clientes_filtro_dimension_secundaria", "value"),
         Input("clientes_analitica_dimension", "value"),
         Input("clientes_analitica_dimension_secundaria", "value"),
         Input("clientes_btn_limpiar_filtros", "n_clicks"),
         prevent_initial_call=True,
     )
     def limpiar_filtros(dimension, secundaria, n_clicks):
-        return ""
+        return "", ""
 
     # Tabla y gráfico.
     @app.callback(
@@ -286,14 +513,30 @@ def registrar_callbacks_analitica_clientes(app):
         Input("clientes_analitica_dimension_secundaria", "value"),
         Input("clientes_analitica_metricas", "value"),
         Input("clientes_filtro_dimension", "value"),
+        Input("clientes_filtro_dimension_secundaria", "value"),
+        Input("clientes_tabla_analitica", "sort_by"),
     )
-    def actualizar_analitica(dimension, secundaria, metricas, filtro_texto):
+    def actualizar_analitica(
+        dimension,
+        secundaria,
+        metricas,
+        filtro_principal,
+        filtro_secundario,
+        sort_by,
+    ):
         try:
             if dimension not in DIMENSIONES:
                 dimension = "gold_segment"
 
             df = _preparar_datos()
-            df = _filtrar_texto(df, dimension, filtro_texto)
+
+            df = _filtrar_dimensiones(
+                df,
+                dimension,
+                secundaria,
+                filtro_principal,
+                filtro_secundario,
+            )
 
             metricas = [
                 metrica
@@ -317,14 +560,56 @@ def registrar_callbacks_analitica_clientes(app):
             )
 
             if agrupado.empty:
-                return [], [], None, px.bar(title="No hay datos para mostrar")
+                return [], [], None, px.bar(
+                    title="No hay datos para mostrar"
+                )
+
+            # El gráfico no incluye la fila TOTAL.
+            agrupado_grafico = agrupado.copy()
+
+            # El total se calcula sobre los clientes que cumplen ambos filtros.
+            total = _calcular_total(
+                df,
+                dimension,
+                secundaria,
+                metricas,
+            )
+
+            agrupado = pd.concat(
+                [agrupado, pd.DataFrame([total])],
+                ignore_index=True,
+            )
 
             tabla = _formatear_tabla(agrupado)
 
-            columnas = [
-                {"name": columna, "id": columna}
-                for columna in tabla.columns
-            ]
+            tabla = _ordenar_tabla_total_al_final(
+                tabla,
+                sort_by,
+                dimension,
+            )
+
+            columnas = []
+
+            for columna in tabla.columns:
+                if _es_columna_numerica(columna):
+                    precision = (
+                        2 if _es_columna_decimal(columna) else 0
+                    )
+
+                    columnas.append({
+                        "name": columna,
+                        "id": columna,
+                        "type": "numeric",
+                        "format": Format(
+                            precision=precision,
+                            scheme=Scheme.fixed,
+                        ),
+                    })
+                else:
+                    columnas.append({
+                        "name": columna,
+                        "id": columna,
+                    })
 
             metrica_grafico = METRICAS[metricas[0]]["label"]
             eje_x = DIMENSIONES[dimension]["label"]
@@ -338,17 +623,20 @@ def registrar_callbacks_analitica_clientes(app):
                 eje_color = DIMENSIONES[secundaria]["label"]
 
                 figura = px.bar(
-                    agrupado,
+                    agrupado_grafico,
                     x=eje_x,
                     y=metrica_grafico,
                     color=eje_color,
                     barmode="group",
-                    title=f"{metrica_grafico} por {eje_x} y {eje_color}",
+                    title=(
+                        f"{metrica_grafico} por "
+                        f"{eje_x} y {eje_color}"
+                    ),
                     text_auto=".2s",
                 )
             else:
                 figura = px.bar(
-                    agrupado,
+                    agrupado_grafico,
                     x=eje_x,
                     y=metrica_grafico,
                     title=f"{metrica_grafico} por {eje_x}",
@@ -361,14 +649,15 @@ def registrar_callbacks_analitica_clientes(app):
                 legend_title_text="",
             )
 
-            # Reiniciar la selección cuando cambia la tabla.
             return tabla.to_dict("records"), columnas, None, figura
 
         except Exception:
             logger.exception("Error al actualizar analítica de clientes")
-            return [], [], None, px.bar(title="No se pudo generar el análisis")
+            return [], [], None, px.bar(
+                title="No se pudo generar el análisis"
+            )
 
-    # Mostrar u ocultar el detalle; cambiar de fila cierra el anterior.
+    # Mostrar u ocultar el detalle.
     @app.callback(
         Output("clientes_contenedor_detalle_analitica", "style"),
         Output("clientes_tabla_detalle_analitica", "data"),
@@ -384,6 +673,7 @@ def registrar_callbacks_analitica_clientes(app):
         State("clientes_analitica_dimension", "value"),
         State("clientes_analitica_dimension_secundaria", "value"),
         State("clientes_filtro_dimension", "value"),
+        State("clientes_filtro_dimension_secundaria", "value"),
         State("clientes_estado_detalle_analitica", "data"),
         prevent_initial_call=True,
     )
@@ -393,7 +683,8 @@ def registrar_callbacks_analitica_clientes(app):
         filas_visibles,
         dimension,
         secundaria,
-        filtro_texto,
+        filtro_principal,
+        filtro_secundario,
         estado_detalle,
     ):
         estilo_base = {
@@ -425,15 +716,26 @@ def registrar_callbacks_analitica_clientes(app):
 
         if active_cell and filas_visibles:
             indice = active_cell.get("row")
+
             if indice is not None and 0 <= indice < len(filas_visibles):
                 fila = filas_visibles[indice]
 
-        if fila is None:
+        if fila is None or fila.get(
+            DIMENSIONES[dimension]["label"]
+        ) == "TOTAL":
             return (
-                estilo_oculto, [], [], "Seleccioná una fila para ver el detalle.",
-                "Mostrar detalle", True,
-                {**estilo_base, "backgroundColor": "#d1d5db",
-                 "color": "#6b7280", "cursor": "not-allowed"},
+                estilo_oculto,
+                [],
+                [],
+                "Seleccioná una fila para ver el detalle.",
+                "Mostrar detalle",
+                True,
+                {
+                    **estilo_base,
+                    "backgroundColor": "#d1d5db",
+                    "color": "#6b7280",
+                    "cursor": "not-allowed",
+                },
                 None,
             )
 
@@ -443,27 +745,43 @@ def registrar_callbacks_analitica_clientes(app):
             "fila": fila,
         }
 
-        # Al cambiar de fila, cerrar el detalle anterior.
         if ctx.triggered_id == "clientes_tabla_analitica":
             return (
-                estilo_oculto, [], [], "Seleccioná Mostrar detalle para abrir el grupo.",
-                "Mostrar detalle", False, estilo_base, None,
+                estilo_oculto,
+                [],
+                [],
+                "Seleccioná Mostrar detalle para abrir el grupo.",
+                "Mostrar detalle",
+                False,
+                estilo_base,
+                None,
             )
 
-        # Alternar apertura y cierre al pulsar el botón.
         if estado_detalle == clave_fila:
             return (
-                estilo_oculto, [], [], "El detalle está cerrado.",
-                "Mostrar detalle", False, estilo_base, None,
+                estilo_oculto,
+                [],
+                [],
+                "El detalle está cerrado.",
+                "Mostrar detalle",
+                False,
+                estilo_base,
+                None,
             )
 
         try:
             df = _preparar_datos()
 
-            # Aplicar la búsqueda de texto principal.
-            df = _filtrar_texto(df, dimension, filtro_texto)
+            df = _filtrar_dimensiones(
+                df,
+                dimension,
+                secundaria,
+                filtro_principal,
+                filtro_secundario,
+            )
 
             dimensiones_grupo = [dimension]
+
             if secundaria in DIMENSIONES and secundaria != dimension:
                 dimensiones_grupo.append(secundaria)
 
@@ -490,8 +808,14 @@ def registrar_callbacks_analitica_clientes(app):
 
             if not columnas_disponibles:
                 return (
-                    estilo_visible, [], [], "No hay columnas disponibles para el detalle.",
-                    "Quitar detalle", False, estilo_base, clave_fila,
+                    estilo_visible,
+                    [],
+                    [],
+                    "No hay columnas disponibles para el detalle.",
+                    "Quitar detalle",
+                    False,
+                    estilo_base,
+                    clave_fila,
                 )
 
             detalle = df[
@@ -506,21 +830,26 @@ def registrar_callbacks_analitica_clientes(app):
                     ).dt.strftime("%Y-%m-%d")
                 )
 
-            detalle = detalle.rename(columns=dict(columnas_disponibles))
+            detalle = detalle.rename(
+                columns=dict(columnas_disponibles)
+            )
 
-            for columna in ("Gasto total",):
-                if columna in detalle.columns:
-                    detalle[columna] = detalle[columna].map(
-                        lambda valor: (
-                            f"$ {valor:,.2f}" if pd.notna(valor) else "—"
-                        )
+            if "Gasto total" in detalle.columns:
+                detalle["Gasto total"] = detalle["Gasto total"].map(
+                    lambda valor: (
+                        f"$ {valor:,.2f}"
+                        if pd.notna(valor)
+                        else "—"
                     )
+                )
 
             if "Calificación promedio" in detalle.columns:
                 detalle["Calificación promedio"] = (
                     detalle["Calificación promedio"].map(
                         lambda valor: (
-                            f"{valor:.2f}" if pd.notna(valor) else "—"
+                            f"{valor:.2f}"
+                            if pd.notna(valor)
+                            else "—"
                         )
                     )
                 )
@@ -544,8 +873,14 @@ def registrar_callbacks_analitica_clientes(app):
         except Exception:
             logger.exception("Error al cargar el detalle de clientes")
             return (
-                estilo_visible, [], [], "No se pudo cargar el detalle.",
-                "Quitar detalle", False, estilo_base, None,
+                estilo_visible,
+                [],
+                [],
+                "No se pudo cargar el detalle.",
+                "Quitar detalle",
+                False,
+                estilo_base,
+                None,
             )
 
     # Exportar la tabla agrupada a PDF.
@@ -562,7 +897,9 @@ def registrar_callbacks_analitica_clientes(app):
 
         tabla = pd.DataFrame(datos)
         orden = [columna["id"] for columna in columnas]
-        tabla = tabla[[col for col in orden if col in tabla.columns]]
+        tabla = tabla[
+            [columna for columna in orden if columna in tabla.columns]
+        ]
 
         contenido = _crear_pdf("Analítica de clientes", tabla)
 

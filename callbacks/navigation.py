@@ -1,4 +1,3 @@
-
 # Callbacks para navegar entre dashboards y vistas
 from urllib.parse import parse_qs
 
@@ -7,6 +6,7 @@ from dash import Input, Output, ctx
 from views.gerencial.sales import crear_vista_gerencial_ventas
 from views.analitica.sales import crear_vista_analitica_ventas
 from views.decisiones.sales import crear_vista_decisiones_ventas
+from views.decisiones.customers import crear_vista_decisiones_clientes
 from views.placeholder import crear_vista_vacia
 from views.business import crear_vista_negocio
 from views.gerencial.customers import crear_vista_clientes
@@ -65,7 +65,11 @@ def registrar_callbacks_navegacion(app, anios, meses, df):
         if dashboard == "ventas" and vista == "decisiones":
             return crear_vista_decisiones_ventas()
 
-        # Clientes ahora tiene su propia vista.
+        # Mostrar la vista de decisiones de clientes.
+        if dashboard == "clientes" and vista == "decisiones":
+            return crear_vista_decisiones_clientes()
+
+        # Las demás vistas de clientes mantienen su implementación.
         if dashboard == "clientes":
             return crear_vista_clientes(vista, anios)
 

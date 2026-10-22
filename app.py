@@ -10,9 +10,12 @@ from components.navigation import crear_barra_navegacion
 from callbacks.sales.gerencial import registrar_callbacks_ventas
 from callbacks.sales.analytics import registrar_callbacks_analitica_ventas
 from callbacks.sales.decisions import registrar_callbacks_decisiones_ventas
+
 from callbacks.business import registrar_callbacks_negocio
+
 from callbacks.customers.gerencial import registrar_callbacks_clientes
 from callbacks.customers.analytics import registrar_callbacks_analitica_clientes
+from callbacks.customers.decisions import registrar_callbacks_decisiones_clientes
 
 
 # Cargar los datos preparados desde Supabase.
@@ -56,7 +59,10 @@ def health():
 app.layout = html.Div(
     [
         dcc.Location(id="dashboard-location", refresh=False),
-        html.Div(crear_barra_navegacion(), id="dashboard-navigation"),
+        html.Div(
+            crear_barra_navegacion(),
+            id="dashboard-navigation",
+        ),
         html.Div(
             id="contenedor_dashboard",
             style={"padding": "0 20px 20px 20px"},
@@ -74,9 +80,13 @@ registrar_callbacks_ventas(app, df)
 registrar_callbacks_navegacion(app, anios, meses, df)
 registrar_callbacks_analitica_ventas(app, df)
 registrar_callbacks_decisiones_ventas(app, df)
+
 registrar_callbacks_negocio(app)
+
 registrar_callbacks_clientes(app)
 registrar_callbacks_analitica_clientes(app)
+registrar_callbacks_decisiones_clientes(app)
+
 
 # Iniciar el servidor local.
 if __name__ == "__main__":
