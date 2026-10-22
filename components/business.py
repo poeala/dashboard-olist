@@ -735,7 +735,7 @@ def _generar_hallazgos_logistica(rows, orders, period):
         (
             "customer_state",
             "Estado de destino",
-            "Revisar si las demoras se concentran en destinos específicos "
+            "Revisar si las demoras se concentran en origenes específicos "
             "y contrastar las rutas que los abastecen.",
         ),
         (
