@@ -1,5 +1,7 @@
+
 # Callbacks para navegar entre dashboards y vistas
 from urllib.parse import parse_qs
+
 from dash import Input, Output, ctx
 
 from views.gerencial.sales import crear_vista_gerencial_ventas
@@ -7,6 +9,7 @@ from views.analitica.sales import crear_vista_analitica_ventas
 from views.decisiones.sales import crear_vista_decisiones_ventas
 from views.placeholder import crear_vista_vacia
 from views.business import crear_vista_negocio
+from views.gerencial.customers import crear_vista_clientes
 
 
 def registrar_callbacks_navegacion(app, anios, meses, df):
@@ -21,41 +24,53 @@ def registrar_callbacks_navegacion(app, anios, meses, df):
     )
     def reiniciar_vista(dashboard, search):
         params = parse_qs((search or "").lstrip("?"))
+
         requested_area = params.get("area", ["ventas"])[0]
-        if requested_area not in {"ventas", "logistica", "clientes", "pagos"}:
+        if requested_area not in {
+            "ventas", "logistica", "clientes", "pagos"
+        }:
             requested_area = "ventas"
+
         vista = params.get("vista", ["gerencial"])[0]
         if vista not in {"gerencial", "analitica", "decisiones"}:
             vista = "gerencial"
+
         if ctx.triggered_id == "selector_dashboard":
             vista = "gerencial"
         else:
             dashboard = requested_area
+
         embedded = params.get("embed", ["0"])[0] == "1"
-        return dashboard, vista, {"display": "none"} if embedded else {}
+
+        return (
+            dashboard,
+            vista,
+            {"display": "none"} if embedded else {},
+        )
 
     # Mostrar la vista seleccionada.
     @app.callback(
         Output("contenedor_dashboard", "children"),
         Input("selector_dashboard", "value"),
-        Input("selector_vista", "value")
+        Input("selector_vista", "value"),
     )
     def cambiar_vista(dashboard, vista):
 
-        # Mostrar el dashboard gerencial de ventas.
         if dashboard == "ventas" and vista == "gerencial":
             return crear_vista_gerencial_ventas(anios, meses)
 
-        # Mostrar el análisis de ventas.
         if dashboard == "ventas" and vista == "analitica":
             return crear_vista_analitica_ventas()
 
-        # Mostrar la toma de decisiones de ventas.
         if dashboard == "ventas" and vista == "decisiones":
             return crear_vista_decisiones_ventas()
 
-        if dashboard in {"logistica", "clientes"}:
+        # Clientes ahora tiene su propia vista.
+        if dashboard == "clientes":
+            return crear_vista_clientes(vista, anios)
+
+        # Logística conserva la vista compartida original.
+        if dashboard == "logistica":
             return crear_vista_negocio(dashboard, vista, anios)
 
-        # Mostrar una pantalla temporal para las demás combinaciones.
         return crear_vista_vacia(dashboard, vista)
