@@ -688,7 +688,7 @@ def registrar_callbacks_analitica_ventas(app, df):
         )
 
         contenido = [
-            Paragraph("Análisis de ventas", estilos_pdf["Title"]),
+            Paragraph("Desempeño comercial", estilos_pdf["Title"]),
             Spacer(1, 3 * mm),
         ]
 
