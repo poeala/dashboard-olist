@@ -1,12 +1,21 @@
-
 """Callbacks del dashboard de Logística."""
+
 import logging
 
-from dash import ClientsideFunction, Input, Output, State, html
+import pandas as pd
+from dash import (
+    ClientsideFunction,
+    Input,
+    Output,
+    State,
+    dcc,
+    html,
+)
 
 from data.business import cargar_logistica
 from data.business_metrics import filtrar_periodo, corte_periodo
 from components.business import logistics_content
+
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +57,6 @@ def registrar_callbacks_negocio(app):
         try:
             min_sample = max(5, min(10000, int(min_sample or 30)))
 
-            # Sin año seleccionado, no se aplica ningún filtro mensual.
             if year == TODOS or year is None:
                 month = TODOS
 
@@ -70,19 +78,55 @@ def registrar_callbacks_negocio(app):
                 dimension,
                 min_sample,
                 reference,
+                year,
+                month,
             )
 
-        except Exception as exc:
-            # No exponer detalles de conexión ni credenciales.
-            logger.error(
-                "No se pudo actualizar Logística: %s",
-                type(exc).__name__,
+        except Exception:
+            # Registra el tipo de excepción, el mensaje y la traza completa.
+            logger.exception(
+                "No se pudo actualizar Logística. "
+                "Vista=%r, año=%r, mes=%r, dimensión=%r, mínimo=%r",
+                view,
+                year,
+                month,
+                dimension,
+                min_sample,
             )
 
             return html.Div([
                 html.H3("No pudimos cargar el análisis logístico"),
                 html.P(
-                    "Verificá la conexión con Supabase y las tablas Gold. "
-                    "Luego, volvé a intentar."
+                    "Se produjo un error al calcular o presentar los datos. "
+                    "Revisá la consola del servidor para identificar "
+                    "la línea que lo provoca."
                 ),
             ], className="business-empty", role="alert")
+
+    @app.callback(
+        Output("business-logistics-export-download", "data"),
+        Input("business-logistics-export-button", "n_clicks"),
+        State("business-logistics-detail-table", "data"),
+        State("business-logistics-detail-table", "columns"),
+        prevent_initial_call=True,
+    )
+    def exportar_detalle_logistico(n_clicks, data, columns):
+        if not n_clicks or not data or not columns:
+            return None
+
+        column_ids = [column["id"] for column in columns]
+        column_names = {
+            column["id"]: column["name"]
+            for column in columns
+        }
+
+        dataframe = pd.DataFrame(data)
+        dataframe = dataframe.reindex(columns=column_ids)
+        dataframe = dataframe.rename(columns=column_names)
+
+        return dcc.send_data_frame(
+            dataframe.to_csv,
+            "detalle_logistico.csv",
+            index=False,
+            encoding="utf-8-sig",
+        )
