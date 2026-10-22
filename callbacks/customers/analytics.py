@@ -1,3 +1,4 @@
+
 # Callbacks para la vista analítica de clientes
 import io
 import logging
@@ -5,7 +6,7 @@ import logging
 import pandas as pd
 import plotly.express as px
 
-from dash import Input, Output, State, ctx, html
+from dash import Input, Output, State, ctx
 from dash.dash_table.Format import Format, Scheme
 from dash.exceptions import PreventUpdate
 
@@ -21,7 +22,6 @@ from reportlab.platypus import (
 from reportlab.lib.styles import getSampleStyleSheet
 
 from data.business import cargar_clientes_gold
-from components.customer_analysis import customer_analysis
 
 logger = logging.getLogger(__name__)
 
@@ -122,8 +122,14 @@ def _filtrar_texto(df, dimension, texto):
     ]
 
 
-def _filtrar_dimensiones(df, dimension, secundaria, filtro_principal, filtro_secundario):
-    """Aplica los filtros de la agrupación principal y la secundaria."""
+def _filtrar_dimensiones(
+    df,
+    dimension,
+    secundaria,
+    filtro_principal,
+    filtro_secundario,
+):
+    """Aplica los filtros de las agrupaciones principal y secundaria."""
     df = _filtrar_texto(df, dimension, filtro_principal)
 
     if secundaria in DIMENSIONES and secundaria != dimension:
@@ -239,7 +245,6 @@ def _agrupar(df, dimension, secundaria, metricas):
         agrupado = agrupado.drop(columns=["_anio_orden"])
 
     else:
-        # Para otras dimensiones no hay una secuencia temporal comparable.
         for metrica in metricas:
             etiqueta = METRICAS[metrica]["label"]
             agrupado[f"{etiqueta} - Variación"] = float("nan")
@@ -331,7 +336,7 @@ def _formatear_tabla(df):
 
 
 def _ordenar_tabla_total_al_final(tabla, sort_by, dimension):
-    """Ordena las filas de detalle y conserva TOTAL al final."""
+    """Ordena las filas y conserva TOTAL al final."""
     if tabla.empty:
         return tabla
 
@@ -504,24 +509,7 @@ def registrar_callbacks_analitica_clientes(app):
     def limpiar_filtros(dimension, secundaria, n_clicks):
         return "", ""
 
-    @app.callback(
-        Output("clientes_patrones_analitica", "children"),
-        Input("clientes_analitica_dimension", "value"),
-        Input("clientes_analitica_dimension_secundaria", "value"),
-        Input("clientes_filtro_dimension", "value"),
-        Input("clientes_filtro_dimension_secundaria", "value"),
-    )
-    def actualizar_patrones(dimension, secundaria, filtro_principal, filtro_secundario):
-        try:
-            df = _filtrar_dimensiones(
-                _preparar_datos(), dimension, secundaria, filtro_principal, filtro_secundario,
-            )
-            return customer_analysis(df)
-        except Exception:
-            logger.exception("Error al actualizar patrones de clientes")
-            return html.Div("No se pudieron cargar los patrones de clientes.", role="alert")
-
-    # Tabla y gráfico.
+    # Tabla y gráfico principal.
     @app.callback(
         Output("clientes_tabla_analitica", "data"),
         Output("clientes_tabla_analitica", "columns"),
@@ -568,6 +556,7 @@ def registrar_callbacks_analitica_clientes(app):
                     if df.empty
                     else "Seleccioná al menos un indicador"
                 )
+
                 return [], [], None, px.bar(title=titulo)
 
             agrupado = _agrupar(
@@ -579,13 +568,12 @@ def registrar_callbacks_analitica_clientes(app):
 
             if agrupado.empty:
                 return [], [], None, px.bar(
-                    title="No hay datos para mostrar"
+                    title="No hay datos para mostrar",
                 )
 
             # El gráfico no incluye la fila TOTAL.
             agrupado_grafico = agrupado.copy()
 
-            # El total se calcula sobre los clientes que cumplen ambos filtros.
             total = _calcular_total(
                 df,
                 dimension,
@@ -671,8 +659,9 @@ def registrar_callbacks_analitica_clientes(app):
 
         except Exception:
             logger.exception("Error al actualizar analítica de clientes")
+
             return [], [], None, px.bar(
-                title="No se pudo generar el análisis"
+                title="No se pudo generar el análisis",
             )
 
     # Mostrar u ocultar el detalle.
@@ -890,6 +879,7 @@ def registrar_callbacks_analitica_clientes(app):
 
         except Exception:
             logger.exception("Error al cargar el detalle de clientes")
+
             return (
                 estilo_visible,
                 [],
@@ -915,6 +905,7 @@ def registrar_callbacks_analitica_clientes(app):
 
         tabla = pd.DataFrame(datos)
         orden = [columna["id"] for columna in columnas]
+
         tabla = tabla[
             [columna for columna in orden if columna in tabla.columns]
         ]

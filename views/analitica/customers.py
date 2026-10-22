@@ -1,3 +1,4 @@
+
 # Vista analítica de clientes
 from dash import html, dcc, dash_table
 
@@ -95,7 +96,6 @@ def crear_vista_analitica_clientes():
         for columna in columnas_variacion
     ]
 
-    # La dimensión principal cambia según la agrupación seleccionada.
     estilos_total = [
         {
             "if": {
@@ -147,8 +147,8 @@ def crear_vista_analitica_clientes():
                                 },
                             ),
                             html.P(
-                                "Explorá segmentación, recurrencia, distribución del gasto "
-                                "y relaciones entre variables.",
+                                "Analizá la distribución de clientes, sus compras "
+                                "y los indicadores principales según las agrupaciones seleccionadas.",
                                 style={
                                     "margin": "0",
                                     "fontSize": "12px",
@@ -411,7 +411,26 @@ def crear_vista_analitica_clientes():
                 style=estilo_tarjeta,
             ),
 
-            # Detalle del grupo seleccionado
+            # Gráfico principal generado a partir de la agrupación de la tabla.
+            html.Div(
+                [
+                    html.H3(
+                        "Visualización de resultados",
+                        style={
+                            "margin": "0 0 8px 0",
+                            "fontSize": "16px",
+                        },
+                    ),
+                    dcc.Graph(
+                        id="clientes_grafico_analitica",
+                        config={"displayModeBar": False},
+                        style={"height": "350px"},
+                    ),
+                ],
+                style=estilo_tarjeta,
+            ),
+
+            # Detalle del grupo seleccionado.
             html.Div(
                 [
                     html.H3(
@@ -459,30 +478,6 @@ def crear_vista_analitica_clientes():
                     **estilo_tarjeta,
                     "display": "none",
                 },
-            ),
-
-            html.H3("Patrones de comportamiento"),
-            html.P(
-                "Historial Gold de los clientes seleccionados por los filtros de la tabla. "
-                "El año corresponde a la última compra, no al período del gasto. "
-                "Recurrencia: al menos dos pedidos entre clientes con pedidos válidos. "
-                "Cada burbuja agrupa clientes del mismo segmento y frecuencia; "
-                "su tamaño indica cantidad de clientes y su altura, gasto promedio. "
-                "Las relaciones son descriptivas y no prueban causalidad.",
-                className="business-note",
-            ),
-            dcc.Loading(html.Div(id="clientes_patrones_analitica"), type="circle"),
-
-            # Gráfico
-            html.Div(
-                [
-                    dcc.Graph(
-                        id="clientes_grafico_analitica",
-                        config={"displayModeBar": False},
-                        style={"height": "350px"},
-                    ),
-                ],
-                style=estilo_tarjeta,
             ),
         ],
         style={
