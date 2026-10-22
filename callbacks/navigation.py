@@ -10,6 +10,7 @@ from views.decisiones.customers import crear_vista_decisiones_clientes
 from views.placeholder import crear_vista_vacia
 from views.business import crear_vista_negocio
 from views.gerencial.customers import crear_vista_clientes
+from views.payments import crear_vista_pagos
 
 
 def registrar_callbacks_navegacion(app, anios, meses, df):
@@ -76,5 +77,8 @@ def registrar_callbacks_navegacion(app, anios, meses, df):
         # Logística conserva la vista compartida original.
         if dashboard == "logistica":
             return crear_vista_negocio(dashboard, vista, anios)
+
+        if dashboard == "pagos":
+            return crear_vista_pagos(vista, anios)
 
         return crear_vista_vacia(dashboard, vista)

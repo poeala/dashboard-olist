@@ -53,7 +53,7 @@ def crear_vista_clientes(vista, anios):
             html.Div([
                 html.H2("Comportamiento de clientes"),
                 html.P(
-                    "Análisis del comportamiento y la recurrencia de clientes.",
+                    "Situación general de los clientes, indicadores principales y evolución mensual.",
                     className="business-subtitle",
                 ),
             ], className="business-heading-text"),

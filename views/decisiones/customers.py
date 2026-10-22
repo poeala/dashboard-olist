@@ -5,38 +5,6 @@ from dash import html, dcc, dash_table
 
 def crear_vista_decisiones_clientes():
 
-    # Crear tarjetas para los indicadores.
-    def crear_tarjeta(titulo, componente_id):
-        return html.Div(
-            [
-                html.P(
-                    titulo,
-                    style={
-                        "fontSize": "12px",
-                        "color": "#666",
-                        "margin": "0 0 8px 0",
-                    },
-                ),
-                html.H3(
-                    "0",
-                    id=componente_id,
-                    style={
-                        "fontSize": "25px",
-                        "margin": "0",
-                    },
-                ),
-            ],
-            style={
-                "backgroundColor": "white",
-                "padding": "16px",
-                "borderRadius": "8px",
-                "boxShadow": "0 1px 5px #dddddd",
-                "flex": "1 1 180px",
-                "minWidth": "180px",
-                "boxSizing": "border-box",
-            },
-        )
-
     # Crear los selectores de año y mes.
     def crear_filtro(titulo, componente_id):
         return html.Div(
@@ -91,8 +59,8 @@ def crear_vista_decisiones_clientes():
                                 },
                             ),
                             html.P(
-                                "Indicadores y hallazgos para identificar "
-                                "oportunidades de fidelización y mejora.",
+                                "Segmentos que requieren intervención, prioridades "
+                                "y acciones fundamentadas en los datos.",
                                 style={
                                     "margin": "0",
                                     "fontSize": "12px",
@@ -134,85 +102,25 @@ def crear_vista_decisiones_clientes():
                 },
             ),
 
-            # Indicadores principales.
-            html.Div(
-                [
-                    crear_tarjeta(
-                        "Clientes analizados",
-                        "decisiones_clientes_total",
-                    ),
-                    crear_tarjeta(
-                        "Clientes recurrentes",
-                        "decisiones_clientes_recurrentes",
-                    ),
-                    crear_tarjeta(
-                        "Gasto promedio por cliente",
-                        "decisiones_clientes_gasto_promedio",
-                    ),
-                    crear_tarjeta(
-                        "Puntuación promedio",
-                        "decisiones_clientes_resena_promedio",
-                    ),
-                ],
-                style={
-                    "display": "flex",
-                    "gap": "12px",
-                    "flexWrap": "wrap",
-                    "marginBottom": "14px",
-                },
-            ),
-
-            # Gráficos principales.
-            html.Div(
-                [
-                    html.Div(
-                        [
-                            dcc.Graph(
-                                id="decisiones_clientes_grafico_segmentos",
-                                config={"displayModeBar": False},
-                                style={"height": "330px"},
-                            ),
-                        ],
-                        style={
-                            **estilo_panel,
-                            "flex": "1 1 400px",
-                        },
-                    ),
-                    html.Div(
-                        [
-                            dcc.Graph(
-                                id="decisiones_clientes_grafico_gasto",
-                                config={"displayModeBar": False},
-                                style={"height": "330px"},
-                            ),
-                        ],
-                        style={
-                            **estilo_panel,
-                            "flex": "1 1 400px",
-                        },
-                    ),
-                ],
-                style={
-                    "display": "flex",
-                    "gap": "14px",
-                    "flexWrap": "wrap",
-                    "marginBottom": "14px",
-                },
+            html.P(
+                id="decisiones_clientes_estado",
+                className="business-note",
+                role="status",
             ),
 
             # Tabla de hallazgos.
             html.Div(
                 [
                     html.H3(
-                        "Hallazgos detectados",
+                        "Prioridades de intervención",
                         style={
                             "fontSize": "16px",
                             "margin": "0 0 6px 0",
                         },
                     ),
                     html.P(
-                        "Señales que pueden orientar decisiones sobre "
-                        "fidelización y experiencia del cliente.",
+                        "Primero las prioridades altas; dentro de cada nivel, "
+                        "los grupos con más clientes. Un segmento puede requerir varias acciones.",
                         style={
                             "fontSize": "12px",
                             "color": "#666",
@@ -270,9 +178,12 @@ def crear_vista_decisiones_clientes():
                         ],
                     ),
                     html.P(
-                        "Los hallazgos se basan en umbrales definidos "
-                        "para el análisis. Son señales para investigar, "
-                        "no pruebas de causalidad.",
+                        "Base histórica Gold: los filtros seleccionan clientes por última compra; "
+                        "sus pedidos, gasto y calificaciones abarcan todo su historial. "
+                        "Mínimo: 20 clientes con datos válidos por regla. "
+                        "Prioridad alta: calificación ≤ 3/5; media: ≤ 3,5/5, "
+                        "recurrencia < 25 % o compra única con gasto ≥ percentil 75. "
+                        "Son criterios exploratorios, no pruebas de causalidad ni de abandono.",
                         style={
                             "fontSize": "11px",
                             "color": "#666",

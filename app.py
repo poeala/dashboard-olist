@@ -16,6 +16,7 @@ from callbacks.business import registrar_callbacks_negocio
 from callbacks.customers.gerencial import registrar_callbacks_clientes
 from callbacks.customers.analytics import registrar_callbacks_analitica_clientes
 from callbacks.customers.decisions import registrar_callbacks_decisiones_clientes
+from callbacks.payments import registrar_callbacks_pagos
 
 
 # Cargar los datos preparados desde Supabase.
@@ -86,6 +87,7 @@ registrar_callbacks_negocio(app)
 registrar_callbacks_clientes(app)
 registrar_callbacks_analitica_clientes(app)
 registrar_callbacks_decisiones_clientes(app)
+registrar_callbacks_pagos(app)
 
 
 # Iniciar el servidor local.

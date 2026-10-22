@@ -124,7 +124,7 @@ function App() {
           {areas.map((item) => (
             <button key={item.id} className={`side-link area-button ${area.id === item.id ? 'sales-selected' : ''}`} aria-current={area.id === item.id ? 'page' : undefined} onClick={() => selectArea(item)}><Icon name={item.icon} />{item.name}{area.id === item.id && <Icon name="chevron-right" />}</button>
           ))}
-          <div className="side-link unavailable"><Icon name="credit-card" /><span>Pagos</span><span className="soon">Pronto</span></div>
+          {/* <div className="side-link unavailable"><Icon name="credit-card" /><span>Pagos</span><span className="soon">Pronto</span></div> */}
         </div>
         <div className="sidebar-bottom"><div className="insight-icon"><Icon name="mortarboard" /></div><strong>Análisis de<br />Datos Masivos</strong><p>Maestría en Ciencia de Datos<br />UCASAL</p><div className="sidebar-footer"><span className="small-dot" /> Proyecto académico · Tablero de prueba</div></div>
       </aside>

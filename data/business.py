@@ -112,3 +112,31 @@ def cargar_clientes_gold():
         "sellers_count",
         "avg_review_score",
     ])
+
+
+@lru_cache(maxsize=1)
+def cargar_pagos_bi():
+    # Unir pagos contra pedidos ya consolidados, nunca contra artículos.
+    # LEFT JOIN conserva pedidos sin pagos para informar cobertura.
+    return _read_snapshot("""
+        WITH orders AS (
+            SELECT order_id, MIN(order_purchase_date) AS purchase_date,
+                   MIN(customer_unique_id) AS customer_id
+            FROM gld_sales_detail
+            WHERE order_purchase_date < :cutoff
+              AND (order_status IS NULL OR LOWER(TRIM(order_status))
+                   NOT IN ('canceled', 'unavailable'))
+            GROUP BY order_id
+        ), customers AS (
+            SELECT customer_unique_id, MIN(customer_segment) AS gold_segment
+            FROM gld_customer_analytics
+            GROUP BY customer_unique_id
+        )
+        SELECT o.order_id, o.purchase_date, o.customer_id, c.gold_segment,
+               p.payment_sequential, p.payment_type, p.payment_value,
+               p.payment_installments, (p.order_id IS NOT NULL) AS has_payment
+        FROM orders o
+        LEFT JOIN gld_payment_detail p ON p.order_id = o.order_id
+        LEFT JOIN customers c ON c.customer_unique_id = o.customer_id
+        ORDER BY o.purchase_date, o.order_id, p.payment_sequential
+    """, ["purchase_date"], ["payment_value", "payment_installments"])

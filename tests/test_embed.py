@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import pandas as pd
 from fixtures_business import logistics_fixture
+from test_payments import payments_fixture
 
 
 class EmbedTests(unittest.TestCase):
@@ -53,6 +54,35 @@ class EmbedTests(unittest.TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertIn("business-content", response.get_data(as_text=True))
+
+    def test_payments_navigation_and_callbacks(self):
+        with patch("callbacks.payments.cargar_pagos_bi", side_effect=payments_fixture):
+            for view in ("gerencial", "analitica", "decisiones"):
+                response = self.client.post("/dashboard/_dash-update-component", json={
+                    "output": "contenedor_dashboard.children",
+                    "outputs": {"id": "contenedor_dashboard", "property": "children"},
+                    "inputs": [
+                        {"id": "selector_dashboard", "property": "value", "value": "pagos"},
+                        {"id": "selector_vista", "property": "value", "value": view}],
+                    "state": [], "changedPropIds": ["selector_dashboard.value"],
+                })
+                self.assertEqual(response.status_code, 200)
+                self.assertIn("payments-content", response.get_data(as_text=True))
+                for year in (2018, 1900):
+                    values = [("payments-view", "data", view), ("payments-year", "value", year),
+                              ("payments-month", "value", "__todos__"), ("payments-minimum", "value", 30),
+                              ("payments-uplift", "value", 20), ("payments-preference", "value", 10)]
+                    response = self.client.post("/dashboard/_dash-update-component", json={
+                        "output": "payments-content.children",
+                        "outputs": {"id": "payments-content", "property": "children"},
+                        "inputs": [{"id": i, "property": p, "value": v} for i, p, v in values],
+                        "state": [], "changedPropIds": ["payments-view.data"],
+                    })
+                    self.assertEqual(response.status_code, 200)
+                    rendered = json.dumps(response.json)
+                    self.assertNotIn("No pudimos cargar", rendered)
+                    if year == 1900:
+                        self.assertIn("No hay pedidos", rendered)
 
     def test_embedded_view_and_standalone_navigation(self):
         output = "..selector_dashboard.value...selector_vista.value...dashboard-navigation.style.."

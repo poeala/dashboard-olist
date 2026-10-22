@@ -73,10 +73,81 @@ se cuenta el pedido una sola vez y se suman sus fletes correspondientes.
 La fecha de entrega es del pedido completo; no permite atribuir el retraso
 de un envío concreto al vendedor. La distancia es estimada, no una ruta real.
 
+**Alcance metodológico.** Una asociación entre vendedor, distancia y retraso
+describe los pedidos en los que participa ese vendedor. No identifica quién
+causó el retraso: un pedido con dos vendedores comparte el resultado de entrega
+en ambos grupos, aunque no se conozca el desempeño de cada envío. La deduplicación
+evita inflar conteos dentro de un grupo, pero no convierte ese resultado del
+pedido en una medición individual del vendedor. Para atribuir responsabilidades
+harían falta fechas y eventos por envío, transportista y tramo, además de
+controlar diferencias de rutas, promesas, estacionalidad y composición de pedidos.
+Esta aclaración aparece al inicio de las tres vistas de Logística.
+
 Decisiones marca grupos cuya tasa supera el mayor entre **10 %** y
 **promedio filtrado + 5 puntos porcentuales**, con al menos 30 entregas
 comparables por defecto. El mínimo es editable entre 5 y 10.000.
 Son reglas académicas explícitas; no representan un SLA contratado.
+
+### Fundamento y evaluación de la regla logística
+
+Sea `p` la tasa de retraso de **pedidos únicos con ambas fechas** dentro de los
+filtros actuales. Un grupo se selecciona si tiene al menos `n` entregas comparables
+y su tasa es **estrictamente mayor** que `max(piso, p + margen)`. Los valores base
+son `n = 30`, `piso = 10 %` y `margen = 5 puntos porcentuales`. La igualdad no activa
+la regla y las comparaciones se hacen sin redondear.
+
+El piso pretende evitar que una referencia baja produzca alertas por tasas
+absolutas bajas; el margen exige una separación descriptiva respecto del contexto
+seleccionado. Esta combinación es una justificación de diseño para una revisión
+exploratoria, **no evidencia de que 10 % y 5 puntos sean óptimos**. No se documentó
+una calibración contra costos, capacidad de intervención, un SLA ni resultados
+de intervenciones. El mínimo de 30 reduce la exposición a grupos muy pequeños,
+pero no establece por sí solo precisión ni significación estadística.
+
+La referencia `p` incluye los pedidos de grupos que no alcanzan el mínimo; no es
+la media simple de porcentajes por grupo. Así se conserva un denominador global
+de pedidos únicos incluso cuando los grupos se superponen. Los pedidos sin ambas
+fechas no se clasifican como puntuales; la ausencia de fechas puede sesgar lo
+observado y debe revisarse junto con la cobertura.
+
+Decisiones incorpora una evaluación de sensibilidad calculada con los datos
+filtrados, manteniendo la agrupación, la referencia y el mínimo de casos:
+
+| Escenario | Piso | Margen sobre `p` |
+| --- | --- | --- |
+| Base | 10 % | 5 pp |
+| Piso menor | 5 % | 5 pp |
+| Piso mayor | 15 % | 5 pp |
+| Margen menor | 10 % | 2 pp |
+| Margen mayor | 10 % | 10 pp |
+
+Se varía un parámetro por vez. La tabla muestra el umbral efectivo, los grupos
+evaluables y seleccionados, y cuántos permanecen, entran o salen respecto de la
+base. Una segunda tabla identifica la selección de cada grupo por escenario.
+Ambas incluyen todos los grupos; el listado de hallazgos también deja de recortarse
+a los primeros 12 y utiliza paginación. Se puede exportar la comparación a CSV.
+Cambiar el mínimo de casos en el filtro recalcula la evaluación completa.
+
+**Ejemplos ilustrativos, no resultados del dataset:** si `p = 3 %`, el umbral base
+es 10 %; con piso de 5 % pasa a 8 %. Si `p = 20 %`, el umbral base es 25 % y cambiar
+solo el piso entre 5 % y 15 % no cambia la selección. Si `p + margen ≥ 100 %`,
+ningún grupo puede superar el umbral: esto es una limitación del criterio relativo,
+no evidencia de buen desempeño. Sin entregas comparables no se evalúa la regla.
+
+Una selección muy variable requiere revisar casos cercanos al umbral y explicitar
+esa dependencia. Una selección estable solo indica estabilidad dentro de estos
+escenarios; no valida causalidad, capacidad predictiva ni beneficio de la acción.
+Los resultados dependen del período, la dimensión, la cobertura y la composición
+de los pedidos; los grupos superpuestos no son muestras independientes y el
+promedio incluye al propio grupo evaluado. No hay ajuste por comparaciones múltiples
+ni una prueba estadística de diferencia respecto de la referencia.
+
+Para evaluar su utilidad operativa queda pendiente definir costos y capacidad de
+revisión, contrastar las alertas con casos investigados y comprobar su estabilidad
+en períodos posteriores. Para evaluar acciones, medir resultados en ventanas
+comparables y, cuando sea viable, frente a un grupo de control. Las pruebas del
+repositorio verifican el cálculo, las fronteras y las membresías de escenarios;
+no sustituyen esa validación empírica.
 
 ## Clientes
 
@@ -104,22 +175,39 @@ preparada en Supabase. Se identifica como histórica porque sus reglas pueden
 usar compras fuera del período seleccionado. No se utiliza como evidencia
 de una condición conocida en una fecha pasada ni como predicción.
 
-Gerencial muestra compradores mensuales y segmentos; los compradores
-mensuales no son aditivos entre meses. Analítica compara gasto y recurrencia
-y permite exportar la tabla agregada. No se envían identificadores de
-clientes individuales al navegador.
+Gerencial concentra la situación general con cuatro KPIs: tasa de clientes
+recurrentes, pedidos por cliente, gasto promedio por cliente y ticket por pedido.
+Muestra evolución mensual de compradores y gasto promedio por comprador.
+Los compradores mensuales no son aditivos entre meses.
 
-Decisiones aplica estas reglas exploratorias:
+Analítica conserva la tabla configurable, detalle y exportación PDF y concentra
+la distribución de segmentos, recurrencia por segmento, histograma de gasto
+y relación entre frecuencia y gasto. Las burbujas agrupan por segmento y número
+de pedidos: posición vertical = gasto promedio; tamaño = cantidad de clientes.
+Los gráficos respetan los filtros de agrupación principal y secundaria.
 
-- Alto valor sin compra durante más de 90 días al corte, por defecto; el
-  intervalo es configurable. Se exige el mínimo de casos seleccionado.
-- Segmentos con reseña media ≤ 3/5 y al menos el mínimo de pedidos con reseña.
-- Recurrencia inferior al 5 %, con el mínimo de compradores.
+Analítica y Decisiones usan `gld_customer_analytics`: sus métricas abarcan el
+historial Gold completo. Los filtros por última compra seleccionan clientes;
+no recalculan sus compras dentro de un período. La calificación es una media
+de promedios por cliente, no una media ponderada por pedidos.
 
-Recurrencia observada **no** equivale a retención de cohortes ni abandono.
-Filtrar un mes limita la oportunidad de recomprar; filtrar meses no contiguos
-también limita el histórico observado. Las acciones sugieren investigar y
-validar estos efectos antes de tomar decisiones.
+Decisiones muestra únicamente intervenciones por segmento, evidencia, acción
+y seguimiento, ordenadas por prioridad y luego por cantidad de clientes.
+No repite KPIs generales ni gráficos descriptivos. Reglas exploratorias:
+
+- Baja satisfacción: al menos 20 clientes con calificación válida (1 a 5).
+  Prioridad alta si la media es ≤ 3/5; media si es > 3 y ≤ 3,5/5.
+- Baja recurrencia: menos del 25 % con al menos dos pedidos, sobre un mínimo
+  de 20 clientes con pedidos válidos (≥ 1). Prioridad media.
+- Alto gasto con compra única: al menos 20 clientes del segmento con un pedido
+  y gasto ≥ percentil 75 de clientes filtrados con gasto válido (≥ 0).
+  Se exige un percentil positivo. Prioridad media.
+
+Los valores ausentes no se consideran ceros en los denominadores de las reglas.
+Un cliente puede participar en más de una intervención; las filas no se suman.
+El percentil se recalcula al filtrar y los empates pueden superar el 25 %.
+Recurrencia observada no equivale a retención por cohortes ni abandono.
+Las acciones requieren validar tiempo de observación y evaluar resultados.
 
 ## Verificación
 
