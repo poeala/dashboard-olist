@@ -59,7 +59,7 @@ en el campo de la variable de Coolify.
 
 La base debe permitir la conexión desde el servidor de Coolify y contener las
 tablas `gld_sales_detail`, `gld_date_dimension`, `gld_order_logistics` y
-`gld_customer_analytics`. `gld_payment_detail` se reserva para Pagos.
+`gld_customer_analytics` y `gld_payment_detail` para Pagos.
 
 ## 4. Dominio y despliegue
 

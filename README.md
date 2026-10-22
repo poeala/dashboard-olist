@@ -7,9 +7,11 @@ La identidad visual y sus fuentes se documentan en [BRANDING.md](BRANDING.md).
 
 Portal React + Bootstrap con el dashboard Dash existente embebido.
 La web está en español, se adapta a móvil e incluye navegación entre las
-vistas Gerencial, Analítica y Decisiones en **Ventas, Logística y Clientes**,
-recarga, pantalla completa y apertura en otra pestaña. Pagos permanece pendiente.
+vistas Gerencial, Analítica y Decisiones en **Ventas, Logística, Clientes y Pagos**,
+recarga, pantalla completa y apertura en otra pestaña.
 Las definiciones, denominadores y reglas de hallazgos están en [METRICAS.md](METRICAS.md).
+La infraestructura Hostinger → Ubuntu → Coolify y la navegación se muestran en
+[ARQUITECTURA.md](ARQUITECTURA.md).
 
 Logística → Gerencial incluye un mapa Leaflet de las cinco regiones de Brasil,
 con GeoJSON local, zoom y detalle por región. Permite alternar entre pedidos
@@ -33,8 +35,7 @@ Copy-Item .env.example .env
 Completar `.env` con las credenciales PostgreSQL/Supabase. Si el archivo ya
 existe, conservarlo. Las tablas Gold que necesita la aplicación son
 `gld_sales_detail`, `gld_date_dimension`, `gld_order_logistics` y
-`gld_customer_analytics`. `gld_payment_detail` queda disponible para el módulo
-de Pagos pendiente.
+`gld_customer_analytics` y `gld_payment_detail`.
 El backend consulta las ventas al iniciar; necesita acceso a la base para arrancar.
 
 Iniciar Python:

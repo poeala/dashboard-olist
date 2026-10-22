@@ -209,6 +209,66 @@ El percentil se recalcula al filtrar y los empates pueden superar el 25 %.
 Recurrencia observada no equivale a retención por cohortes ni abandono.
 Las acciones requieren validar tiempo de observación y evaluar resultados.
 
+## Pagos
+
+Fuente: `gld_payment_detail`, a grano **pedido + secuencia de pago**. La consulta
+une pagos con ventas previamente consolidadas por pedido, evitando multiplicar
+pagos por artículos. Los filtros usan fecha de compra, el mismo corte histórico
+y la exclusión de cancelados/no disponibles. Se conservan pedidos sin registros
+de pago para informar cobertura. La instantánea se renueva al reiniciar el backend.
+
+Se eliminan registros idénticos de una misma clave; claves contradictorias
+producen un estado de error para revisar la fuente. Un pedido con algún importe
+faltante, negativo, no finito o una secuencia faltante se excluye completo de
+importes, tickets y comparaciones. Un importe cero es válido. La pantalla informa
+pedidos sin pagos, pedidos excluidos y atributos desconocidos.
+
+| Indicador | Definición |
+| --- | --- |
+| Importe total de pagos | Suma de pagos de pedidos completos válidos |
+| Participación monetaria | Importe registrado por medio / importe total × 100; sin porcentaje si el total es cero |
+| Ticket por pedido | Suma de pagos consolidados / pedidos completos válidos |
+| Pedidos en cuotas | Pedidos con máximo de cuotas > 1 / pedidos con cuotas conocidas en todos sus registros × 100 |
+| Promedio de cuotas | Media del máximo de cuotas por pedido, entre pedidos con cuotas conocidas |
+| Pagos mixtos | Pedidos con al menos dos medios distintos / pedidos con todos sus medios conocidos × 100 |
+
+Las cuotas válidas son enteros ≥ 1; cero, negativos, no finitos y faltantes son
+desconocidos. El máximo es una convención por pedido, no una suma ni un promedio
+ponderado por importe. Varios pagos del mismo medio no constituyen pagos mixtos.
+Medios no reconocidos se muestran como «Sin información / otro» y se excluyen
+del denominador de pagos mixtos y de las reglas por medio.
+
+Gerencial presenta cuatro KPIs, promedio de cuotas, medio con mayor importe y
+evolución mensual. Analítica muestra participación monetaria por registro,
+ticket por medio del pedido con mixtos separados, mediana por número de cuotas
+solo para crédito exclusivo y distribución de medios por segmento histórico.
+Los pedidos asociados a distintos medios no se suman; los importes sí se
+reparten por registro. La distribución por segmento cuenta pedidos, no clientes.
+Gold puede incluir información posterior al período seleccionado.
+
+Decisiones usa comparaciones descriptivas con un mínimo editable de 30 pedidos
+por grupo y referencia. Reglas iniciales, también editables:
+
+- Ticket de un medio al menos 20 % mayor que el resto de pedidos con medios conocidos.
+  Los mixtos pueden formar parte de la referencia, pero no generan esta regla.
+- Mediana de pedidos de crédito exclusivo en 2–3, 4–6 o 7+ cuotas al menos 20 %
+  mayor que la de crédito en una cuota.
+- Participación de un medio en un segmento al menos 10 puntos porcentuales
+  superior a la del resto de segmentos conocidos. Se exige el mínimo también
+  en la combinación medio–segmento. Los mixtos son una categoría separada.
+
+No se evalúan diferencias relativas con referencia monetaria cero. Cada
+oportunidad incluye muestras, comparación, acción a evaluar y seguimiento.
+Se ordenan por cantidad de pedidos del grupo; un pedido puede respaldar varias
+reglas. Cambiar controles permite explorar sensibilidad. Los umbrales son
+exploratorios, no valores óptimos validados ni pruebas estadísticas.
+
+Los pagos registrados no son margen ni ingresos netos liquidados. Más cuotas
+asociadas a compras mayores no demuestran que ofrecer cuotas aumente ventas.
+Faltan costos financieros y controles por categoría, época y perfil de comprador.
+Las propuestas requieren un piloto y evaluación de conversión y margen frente
+a un control; no constituyen una recomendación de ejecución automática.
+
 ## Verificación
 
 Las pruebas comprueban pedidos de varios vendedores, fechas ausentes,
