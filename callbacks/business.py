@@ -2,7 +2,7 @@
 """Callbacks del dashboard de Logística."""
 import logging
 
-from dash import Input, Output, State, html
+from dash import ClientsideFunction, Input, Output, State, html
 
 from data.business import cargar_logistica
 from data.business_metrics import filtrar_periodo, corte_periodo
@@ -14,6 +14,12 @@ TODOS = "__todos__"
 
 
 def registrar_callbacks_negocio(app):
+    app.clientside_callback(
+        ClientsideFunction(namespace="logisticsMap", function_name="render"),
+        Output("logistics-map-status", "children"),
+        Input("logistics-map-data", "data"),
+        Input("logistics-map-metric", "value"),
+    )
 
     @app.callback(
         Output("business-month", "disabled"),

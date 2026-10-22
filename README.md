@@ -11,6 +11,13 @@ vistas Gerencial, Analítica y Decisiones en **Ventas, Logística y Clientes**,
 recarga, pantalla completa y apertura en otra pestaña. Pagos permanece pendiente.
 Las definiciones, denominadores y reglas de hallazgos están en [METRICAS.md](METRICAS.md).
 
+Logística → Gerencial incluye un mapa Leaflet de las cinco regiones de Brasil,
+con GeoJSON local, zoom y detalle por región. Permite alternar entre pedidos
+únicos y porcentaje de entregas con retraso, respetando los filtros de año y
+mes. Incluye leyenda y tabla accesible. Leaflet y los límites se sirven desde
+el propio dashboard; no requiere CDN ni servicios de mapas externos.
+Las fuentes y la regeneración del GeoJSON están en [MAP_SOURCES.md](assets/MAP_SOURCES.md).
+
 ## Desarrollo local
 
 Requisitos: Python 3.13 y Node.js 22.14 o posterior.
