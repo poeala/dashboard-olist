@@ -126,7 +126,7 @@ function App() {
           ))}
           {/* <div className="side-link unavailable"><Icon name="credit-card" /><span>Pagos</span><span className="soon">Pronto</span></div> */}
         </div>
-        <div className="sidebar-bottom"><div className="insight-icon"><Icon name="mortarboard" /></div><strong>Análisis de<br />Datos Masivos</strong><p>Maestría en Ciencia de Datos<br />UCASAL</p><div className="sidebar-footer"><span className="small-dot" /> Proyecto académico · Tablero de prueba</div></div>
+        <div className="sidebar-bottom"><div className="insight-icon"><Icon name="mortarboard" /></div><strong>Análisis de<br />Datos Masivos</strong><p>Maestría en Ciencia de Datos<br />UCASAL</p><div className="sidebar-footer"><span className="small-dot" /> Proyecto académico · Tablero Olist</div></div>
       </aside>
 
       <div className="main-shell">
@@ -137,7 +137,7 @@ function App() {
 
         <main id="main-content" className="content">
           <div className="page-heading">
-            <div className="academic-heading"><div className="eyebrow"><span /> UCASAL · PROYECTO ACADÉMICO</div><h1>Tablero de prueba<span>.</span></h1><p>Presentación del trabajo realizado para la cátedra de <strong>Análisis de Datos Masivos</strong> de la carrera de <strong>Maestría en Ciencia de Datos de UCASAL</strong>.</p><div className="project-authors"><Icon name="people" /><span>Realizado por <strong>Fabio Quaino</strong> y <strong>María Luz Andrade</strong>.</span></div></div>
+            <div className="academic-heading"><div className="eyebrow"><span /> UCASAL · PROYECTO ACADÉMICO</div><h1>Tablero Olist<span>.</span></h1><p>Presentación del trabajo realizado para la cátedra de <strong>Análisis de Datos Masivos</strong> de la carrera de <strong>Maestría en Ciencia de Datos de UCASAL</strong>.</p><div className="project-authors"><Icon name="people" /><span>Realizado por <strong>Fabio Quaino</strong> y <strong>María Luz Andrade</strong>.</span></div></div>
             <div className={`connection-badge ${status === 'ready' ? 'connected' : ''}`} role="status"><span className="small-dot" />{status === 'ready' ? 'Dashboard conectado' : status === 'checking' ? 'Conectando dashboard' : 'Sin conexión'}</div>
           </div>
 

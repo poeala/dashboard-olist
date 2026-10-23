@@ -21,7 +21,7 @@ def crear_vista_gerencial_ventas(anios, meses):
                                 }
                             ),
                             html.P(
-                                "Indicadores generales de ventas, facturación y evolución comercial.",
+                                "Ventas, facturación y evolución comercial.",
                                 style={
                                     "margin": "0",
                                     "fontSize": "12px",

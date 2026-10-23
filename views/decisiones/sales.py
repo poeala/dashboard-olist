@@ -85,14 +85,14 @@ def crear_vista_decisiones_ventas():
                     html.Div(
                         [
                             html.H2(
-                                "Inteligencia comercial",
+                                "Desempeño comercial",
                                 style={
                                     "margin": "0 0 4px 0",
                                     "fontSize": "23px"
                                 }
                             ),
                             html.P(
-                                "Detectá desvíos, tendencias y oportunidades para orientar las decisiones del negocio.",
+                                "Ventas, facturación y evolución comercial.",
                                 style={
                                     "margin": "0",
                                     "fontSize": "12px",

@@ -46,7 +46,7 @@ class CustomerViewsTests(unittest.TestCase):
         rendered = serialize(crear_vista_decisiones_clientes())
         self.assertNotIn('"type": "Graph"', rendered)
         self.assertNotIn("decisiones_clientes_total", rendered)
-        self.assertIn("Prioridades de intervención", rendered)
+        self.assertIn("Hallazgos detectados", rendered)
 
     def test_priorities_and_targeted_high_spending(self):
         rows = generar_intervenciones(gold_fixture())

@@ -979,16 +979,6 @@ def _seccion_reglas_logistica(min_sample, limit, stats):
             ),
         },
         {
-            "Hallazgo": "Diferencia de calificación",
-            "Regla de detección": (
-                "La calificación media de las entregas puntuales debe "
-                "superar en al menos 0,5 puntos a la de las retrasadas."
-            ),
-            "Evidencia mínima": (
-                f"{min_sample} pedidos con reseña válida en cada grupo."
-            ),
-        },
-        {
             "Hallazgo": "Flete medio",
             "Regla de detección": (
                 "Se identifica una diferencia descriptiva si el flete "

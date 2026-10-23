@@ -43,7 +43,7 @@ def crear_vista_analitica_ventas():
                                 }
                             ),
                             html.P(
-                                "Explorá las ventas mediante distintas dimensiones, agrupaciones y métricas.",
+                                "Ventas, facturación y evolución comercial.",
                                 style={
                                     "margin": "0",
                                     "fontSize": "12px",
