@@ -1,0 +1,27 @@
+.payments-context, .payments-details {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 14px 18px;
+    margin: 14px 0;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.payments-context p { margin: 0 0 8px; }
+.payments-content summary { cursor: pointer; color: #003d7c; font-weight: 600; }
+.payments-details dl {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px 20px;
+    margin: 14px 0 0;
+}
+.payments-details dd { margin: 0; }
+.payments-chart-section { min-width: 0; }
+.payments-chart-title { font-size: 16px; color: #003d7c; margin: 0 0 10px; line-height: 1.4; }
+.payments-content .business-charts { align-items: start; }
+.payments-content .business-table { min-width: 0; max-width: 100%; box-sizing: border-box; }
+@media (max-width: 600px) {
+    .payments-details dl { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+    .payments-details dd { margin-bottom: 10px; }
+    .payments-context, .payments-details { padding: 12px; }
+}

@@ -100,49 +100,93 @@ def preferencias_segmento(orders):
     return result
 
 
-def oportunidades_pago(orders, minimum=30, uplift=20, preference_pp=10):
-    """Contrastes descriptivos con el resto, sin predicciones ni atribución causal."""
+MINIMUM_ORDERS = 30
+MINIMUM_DIFFERENCE = 20
+QUOTA_RANGES = [("1 cuota", 1, 1), ("2–3 cuotas", 2, 3),
+                ("4–6 cuotas", 4, 6), ("7 o más cuotas", 7, float("inf"))]
+
+
+def participacion_por_tipo_pedido(payments, orders):
+    """Clasifica cada pedido una vez; todo el importe mixto queda separado."""
+    result = agrupar_pedidos_pago(orders)
+    records = orders.groupby("method")["records"].sum()
+    result["records"] = result["method"].map(records)
+    total = result["amount"].sum()
+    result["share"] = 100 * result["amount"] / total if total > 0 else np.nan
+    return result.sort_values("amount", ascending=False)
+
+
+def evolucion_pagos(orders, daily=False):
+    """Mantiene períodos ausentes como huecos, nunca como importes cero."""
+    source = orders.dropna(subset=["purchase_date"]).copy()
+    source["period"] = source["purchase_date"].dt.to_period("D" if daily else "M")
+    result = source.groupby("period").agg(
+        amount=("amount", "sum"), ticket=("amount", "mean"), orders=("order_id", "size"),
+    )
+    if not result.empty:
+        result = result.reindex(pd.period_range(result.index.min(), result.index.max(),
+                                               freq="D" if daily else "M"))
+    result.index.name = "period"
+    result = result.reset_index()
+    result["period"] = result["period"].dt.to_timestamp()
+    return result
+
+
+def _credito_exclusivo(orders):
+    return orders[orders["known_method"] & orders["known_installments"]
+                  & orders["method"].eq("Tarjeta de crédito")]
+
+
+def resumen_cuotas(orders):
+    credit = _credito_exclusivo(orders)
+    result = []
+    for label, low, high in QUOTA_RANGES:
+        amounts = credit.loc[credit["installments"].between(low, high), "amount"]
+        result.append({"range": label, "orders": len(amounts), "median": amounts.median(),
+                       "p25": amounts.quantile(.25), "p75": amounts.quantile(.75)})
+    return pd.DataFrame(result)
+
+
+def comparaciones_pago(orders, minimum=MINIMUM_ORDERS, uplift=MINIMUM_DIFFERENCE):
+    """Única fuente de reglas para pantalla y pruebas; conserva motivos no evaluables."""
     results = []
-    def append(finding, evidence, action, followup, count):
-        results.append({"priority": "Explorar", "finding": finding, "orders": int(count),
-                        "evidence": evidence, "action": action, "followup": followup})
+
+    def compare(kind, label, group, rest, reference, metric, action, followup):
+        value = group["amount"].agg(metric)
+        base = rest["amount"].agg(metric)
+        if len(group) < minimum or len(rest) < minimum:
+            status, gap = "Muestra insuficiente", None
+        elif pd.isna(base) or base <= 0:
+            status, gap = "Referencia monetaria no positiva", None
+        else:
+            gap = 100 * (value / base - 1)
+            status = "Hallazgo" if gap >= uplift else "Sin hallazgo según estas reglas"
+        results.append({
+            "kind": kind, "group": label, "reference": reference,
+            "metric": "Ticket promedio" if metric == "mean" else "Mediana",
+            "orders": len(group), "reference_orders": len(rest),
+            "value": value, "reference_value": base, "gap": gap,
+            "status": status, "action": action, "followup": followup,
+        })
+
     known = orders[orders["known_method"]]
-    for method, group in known.groupby("method"):
-        if method == "Pagos mixtos":
-            continue
-        rest = known[known["method"].ne(method)]
-        if len(group) >= minimum and len(rest) >= minimum and rest["amount"].mean() > 0:
-            gap = 100 * (group["amount"].mean() / rest["amount"].mean() - 1)
-            if gap >= uplift:
-                append(f"Ticket elevado · {method}",
-                       f"Ticket R$ {group['amount'].mean():.2f} en {len(group)} pedidos; "
-                       f"resto R$ {rest['amount'].mean():.2f} en {len(rest)} (+{gap:.1f} %).",
-                       "Evaluar una oferta para usuarios de este medio, revisando categorías, costos y margen antes de probarla.",
-                       "Comparar conversión y margen incremental con un grupo de control.", len(group))
-    credit = orders[orders["method"].eq("Tarjeta de crédito") & orders["known_installments"]]
+    for method in METHODS.values():
+        compare("medio", method, known[known["method"].eq(method)],
+                known[known["method"].ne(method)], "Resto de pedidos con medio conocido", "mean",
+                "Comparar categorías, períodos y perfiles similares; revisar comisiones y margen.",
+                "Si persiste la diferencia, evaluar un piloto con control y medir conversión y margen incremental.")
+    credit = _credito_exclusivo(orders)
     single = credit[credit["installments"].eq(1)]
-    for label, low, high in (("2–3 cuotas", 2, 3), ("4–6 cuotas", 4, 6), ("7 o más cuotas", 7, float("inf"))):
-        group = credit[credit["installments"].between(low, high)]
-        if len(group) >= minimum and len(single) >= minimum and single["amount"].median() > 0:
-            gap = 100 * (group["amount"].median() / single["amount"].median() - 1)
-            if gap >= uplift:
-                append(f"Mayor importe asociado a {label}",
-                       f"Mediana R$ {group['amount'].median():.2f} en {len(group)} pedidos; "
-                       f"crédito en una cuota R$ {single['amount'].median():.2f} en {len(single)} (+{gap:.1f} %).",
-                       "Evaluar viabilidad y costo de financiación en este rango y diseñar una prueba comercial acotada.",
-                       "Medir conversión y margen neto de costos financieros; más cuotas no implica más ventas.", len(group))
-    preferences = preferencias_segmento(orders)
-    usable = known[known["gold_segment"].ne("Sin segmento")]
-    for _, row in preferences.iterrows():
-        rest = usable[usable["gold_segment"].ne(row["gold_segment"])]
-        if row["orders"] >= minimum and len(rest) >= minimum:
-            rest_share = 100 * rest["method"].eq(row["method"]).mean()
-            gap = row["share"] - rest_share
-            if gap >= preference_pp:
-                append(f"Preferencia observada · {row['gold_segment']} · {row['method']}",
-                       f"{int(row['orders'])}/{int(row['segment_orders'])} pedidos del segmento "
-                       f"({row['share']:.1f} %), frente a {rest_share:.1f} % en {len(rest)} pedidos "
-                       f"del resto de segmentos (+{gap:.1f} pp).",
-                       "Explorar promociones por medio y segmento; validar su composición y el momento de la clasificación Gold.",
-                       "Comparar adopción, conversión y margen en un piloto con control; no interpretar pedidos como clientes únicos.", row["orders"])
-    return sorted(results, key=lambda item: (-item["orders"], item["finding"]))
+    for label, low, high in QUOTA_RANGES[1:]:
+        compare("cuotas", label, credit[credit["installments"].between(low, high)],
+                single, "Crédito exclusivo en una cuota", "median",
+                "Revisar productos y períodos comparables; estimar costo de financiación y margen.",
+                "Evaluar un piloto con control y medir conversión y margen neto de costos financieros.")
+    return results
+
+
+def oportunidades_pago(orders, minimum=MINIMUM_ORDERS, uplift=MINIMUM_DIFFERENCE):
+    return sorted(
+        (item for item in comparaciones_pago(orders, minimum, uplift) if item["status"] == "Hallazgo"),
+        key=lambda item: (-item["gap"], item["group"]),
+    )

@@ -96,8 +96,13 @@ Navegador → React / Bootstrap
 ```
 
 El prefijo `/dashboard/` se aplica a los recursos y callbacks de Dash.
+Pagos distingue importes por medio de pago y por tipo exclusivo de pedido,
+expone cobertura y denominadores, y compara medianas por rangos de cuotas.
+Al seleccionar un mes, la evolución de importe, ticket y pedidos pasa a días.
+Decisiones muestra comparaciones con muestras, referencias y seguimiento.
+
 `embed=1` oculta la navegación duplicada; sin ese parámetro el dashboard
-conserva sus selectores. `area` acepta `ventas`, `logistica` y `clientes`;
+conserva sus selectores. `area` acepta `ventas`, `logistica`, `clientes` y `pagos`;
 `vista` acepta `gerencial`, `analitica` y `decisiones`. Ejemplo de enlace al
 portal: `http://localhost:8080/?area=clientes&vista=analitica`.
 El logo usa la URL de recursos de Dash para funcionar bajo el prefijo.

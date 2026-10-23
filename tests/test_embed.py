@@ -70,8 +70,7 @@ class EmbedTests(unittest.TestCase):
                 self.assertIn("payments-content", response.get_data(as_text=True))
                 for year in (2018, 1900):
                     values = [("payments-view", "data", view), ("payments-year", "value", year),
-                              ("payments-month", "value", "__todos__"), ("payments-minimum", "value", 30),
-                              ("payments-uplift", "value", 20), ("payments-preference", "value", 10)]
+                              ("payments-month", "value", "__todos__")]
                     response = self.client.post("/dashboard/_dash-update-component", json={
                         "output": "payments-content.children",
                         "outputs": {"id": "payments-content", "property": "children"},
@@ -83,6 +82,22 @@ class EmbedTests(unittest.TestCase):
                     self.assertNotIn("No pudimos cargar", rendered)
                     if year == 1900:
                         self.assertIn("No hay pedidos", rendered)
+
+    def test_payments_month_switches_to_daily_evolution(self):
+        with patch("callbacks.payments.cargar_pagos_bi", side_effect=payments_fixture):
+            for month, expected in ((1, "evolución diaria"), ("__todos__", "evolución mensual")):
+                response = self.client.post("/dashboard/_dash-update-component", json={
+                    "output": "payments-content.children",
+                    "outputs": {"id": "payments-content", "property": "children"},
+                    "inputs": [
+                        {"id": "payments-view", "property": "data", "value": "gerencial"},
+                        {"id": "payments-year", "property": "value", "value": 2018},
+                        {"id": "payments-month", "property": "value", "value": month},
+                    ],
+                    "state": [], "changedPropIds": ["payments-month.value"],
+                })
+                self.assertEqual(response.status_code, 200)
+                self.assertIn(expected, json.dumps(response.json, ensure_ascii=False))
 
     def test_embedded_view_and_standalone_navigation(self):
         output = "..selector_dashboard.value...selector_vista.value...dashboard-navigation.style.."

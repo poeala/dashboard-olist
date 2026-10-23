@@ -7,7 +7,8 @@ from plotly.utils import PlotlyJSONEncoder
 from components.payments import payments_content
 from data.payment_metrics import (
     preparar_pagos, resumen_pagos, participacion_pagos,
-    agrupar_pedidos_pago, oportunidades_pago,
+    agrupar_pedidos_pago, oportunidades_pago, comparaciones_pago,
+    evolucion_pagos, resumen_cuotas, participacion_por_tipo_pedido,
 )
 
 
@@ -98,14 +99,68 @@ class PaymentsTests(unittest.TestCase):
             ) for i in range(30)
         ])
         findings = oportunidades_pago(orders)
-        self.assertTrue(any("7 o más cuotas" in f["finding"] for f in findings))
-        self.assertTrue(any("Ticket elevado" in f["finding"] for f in findings))
-        self.assertTrue(any("Preferencia observada" in f["finding"] for f in findings))
-        self.assertTrue(all(f["evidence"] and f["followup"] for f in findings))
-        self.assertFalse(any("7 o más cuotas" in f["finding"] for f in oportunidades_pago(orders, minimum=31)))
-        self.assertFalse(any("Ticket elevado" in f["finding"] for f in oportunidades_pago(orders, uplift=201)))
+        quota = next(f for f in findings if f["group"] == "7 o más cuotas")
+        self.assertEqual(quota["gap"], 100)
+        self.assertEqual(quota["reference_orders"], 30)
+        self.assertEqual(quota["value"], 200)
+        self.assertTrue(any(f["kind"] == "medio" for f in findings))
+        self.assertTrue(all(f["action"] and f["followup"] for f in findings))
+        self.assertFalse(any(f["kind"] == "cuotas" for f in oportunidades_pago(orders, minimum=31)))
+        self.assertFalse(oportunidades_pago(orders, uplift=201))
+        statuses = {f["status"] for f in comparaciones_pago(orders)}
+        self.assertIn("Muestra insuficiente", statuses)
+        self.assertIn("Sin hallazgo según estas reglas", statuses)
         orders["amount"] = 0
-        self.assertFalse(any("Ticket elevado" in f["finding"] for f in oportunidades_pago(orders)))
+        self.assertFalse(oportunidades_pago(orders))
+        self.assertIn("Referencia monetaria no positiva", {f["status"] for f in comparaciones_pago(orders)})
+
+    def test_daily_and_monthly_evolution_preserve_gaps(self):
+        _, orders, _ = preparar_pagos(payments_fixture())
+        orders = orders.iloc[:2].copy()
+        orders["purchase_date"] = pd.to_datetime(["2018-01-01", "2018-01-03"])
+        daily = evolucion_pagos(orders, daily=True)
+        self.assertEqual(len(daily), 3)
+        self.assertTrue(pd.isna(daily.iloc[1]["amount"]))
+        self.assertEqual(daily["amount"].sum(), 300)
+        self.assertEqual(daily["orders"].sum(), 2)
+        orders["purchase_date"] = pd.to_datetime(["2018-01-01", "2018-03-03"])
+        monthly = evolucion_pagos(orders)
+        self.assertEqual(len(monthly), 3)
+        self.assertTrue(pd.isna(monthly.iloc[1]["ticket"]))
+        self.assertTrue(evolucion_pagos(orders.iloc[:0]).empty)
+
+    def test_shares_keep_mixed_orders_separate_without_losing_amounts(self):
+        payments, orders, _ = preparar_pagos(payments_fixture())
+        records = participacion_pagos(payments).set_index("method")
+        classified = participacion_por_tipo_pedido(payments, orders).set_index("method")
+        self.assertEqual(records.loc["Tarjeta de crédito", "amount"], 350)
+        self.assertEqual(classified.loc["Tarjeta de crédito", "amount"], 270)
+        self.assertEqual(classified.loc["Pagos mixtos", "amount"], 100)
+        self.assertEqual(classified["orders"].sum(), 4)
+        self.assertEqual(classified["amount"].sum(), records["amount"].sum())
+        self.assertAlmostEqual(classified["share"].sum(), 100)
+
+    def test_quota_distribution_excludes_mixed_and_unknown_quotas(self):
+        _, orders, _ = preparar_pagos(payments_fixture())
+        quotas = resumen_cuotas(orders).set_index("range")
+        self.assertEqual(quotas["orders"].sum(), 1)
+        self.assertEqual(quotas.loc["4–6 cuotas", "median"], 200)
+        self.assertTrue(pd.isna(quotas.loc["1 cuota", "median"]))
+
+    def test_coverage_and_denominators_remain_visible_for_invalid_orders(self):
+        rows = payments_fixture()
+        rendered = json.dumps(payments_content(rows, "gerencial", pd.NaT),
+                              cls=PlotlyJSONEncoder, ensure_ascii=False)
+        self.assertIn("Cobertura: 4 de 6", rendered)
+        self.assertIn("Sin pagos: 1", rendered)
+        self.assertIn("Cuotas desconocidas: 1", rendered)
+        self.assertIn("R$ 105,00", rendered)
+        self.assertIn("2 de 3 con cuotas conocidas", rendered)
+        invalid = rows[rows.order_id.isin(["e", "f"])]
+        rendered = json.dumps(payments_content(invalid, "gerencial", pd.NaT),
+                              cls=PlotlyJSONEncoder, ensure_ascii=False)
+        self.assertIn("Cobertura: 0 de 2", rendered)
+        self.assertIn("No hay pedidos", rendered)
 
     def test_each_view_serializes_and_decisions_has_no_general_kpis(self):
         for view in ("gerencial", "analitica", "decisiones"):
