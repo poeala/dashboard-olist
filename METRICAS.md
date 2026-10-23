@@ -230,6 +230,8 @@ pedidos sin pagos, pedidos excluidos y atributos desconocidos.
 | Ticket por pedido | Suma de pagos consolidados / pedidos completos válidos |
 | Pedidos en cuotas | Pedidos con máximo de cuotas > 1 / pedidos con cuotas conocidas en todos sus registros × 100 |
 | Promedio de cuotas | Media del máximo de cuotas por pedido, entre pedidos con cuotas conocidas |
+| Cuotas promedio en pedidos financiados | Media del máximo, solo para pedidos con cuotas conocidas y máximo > 1 |
+| Importe promedio por registro | Suma de pagos / cantidad de registros válidos; no es ticket por pedido |
 | Pagos mixtos | Pedidos con al menos dos medios distintos / pedidos con todos sus medios conocidos × 100 |
 
 Las cuotas válidas son enteros ≥ 1; cero, negativos, no finitos y faltantes son
@@ -238,30 +240,48 @@ ponderado por importe. Varios pagos del mismo medio no constituyen pagos mixtos.
 Medios no reconocidos se muestran como «Sin información / otro» y se excluyen
 del denominador de pagos mixtos y de las reglas por medio.
 
-Gerencial presenta cuatro KPIs, promedio de cuotas, medio con mayor importe y
-evolución mensual. Analítica muestra participación monetaria por registro,
-ticket por medio del pedido con mixtos separados, mediana por número de cuotas
-solo para crédito exclusivo y distribución de medios por segmento histórico.
-Los pedidos asociados a distintos medios no se suman; los importes sí se
-reparten por registro. La distribución por segmento cuenta pedidos, no clientes.
-Gold puede incluir información posterior al período seleccionado.
+Las tres vistas muestran período seleccionado, fechas de compra observadas,
+corte del histórico y cobertura sobre pedidos presentes en Ventas. El corte
+no certifica meses completos. Las exclusiones y atributos desconocidos son
+visibles incluso cuando no quedan pedidos válidos.
 
-Decisiones usa comparaciones descriptivas con un mínimo editable de 30 pedidos
-por grupo y referencia. Reglas iniciales, también editables:
+Gerencial presenta importe total, pedidos válidos, ticket por pedido y porcentaje
+de pedidos en cuotas. Los indicadores secundarios distinguen registros de pagos,
+pagos mixtos, cuotas promedio de todos los pedidos y solo de financiados.
+La evolución de importe, ticket y cantidad de pedidos es diaria al elegir un
+mes concreto, y mensual en las demás selecciones. Los períodos interiores sin
+observaciones se conservan como huecos; no se convierten en cero ni se unen.
+
+Analítica distingue dos participaciones monetarias: por medio real de cada
+registro y por tipo exclusivo de pedido (todos los importes de pedidos mixtos
+quedan en una categoría separada). El primer criterio coincide con el medio
+principal informado en Gerencial; sus conteos de pedidos no son aditivos.
+La tabla por tipo de pedido sí tiene pedidos e importes aditivos. No se muestran
+porcentajes cuando el importe total es cero.
+
+Las medianas y percentiles 25/75 por rangos 1, 2–3, 4–6 y 7+ cuotas utilizan
+solo crédito exclusivo con cuotas conocidas y muestran el tamaño de muestra.
+La línea de referencia es la mediana en una cuota, cuando está disponible.
+La composición por segmento cuenta pedidos con medio y segmento conocidos,
+no clientes únicos. Gold puede incluir información posterior a la selección.
+
+Decisiones usa una única implementación de comparaciones descriptivas compartida
+con las pruebas, con un mínimo fijo de 30 pedidos por grupo y referencia:
 
 - Ticket de un medio al menos 20 % mayor que el resto de pedidos con medios conocidos.
   Los mixtos pueden formar parte de la referencia, pero no generan esta regla.
 - Mediana de pedidos de crédito exclusivo en 2–3, 4–6 o 7+ cuotas al menos 20 %
   mayor que la de crédito en una cuota.
-- Participación de un medio en un segmento al menos 10 puntos porcentuales
-  superior a la del resto de segmentos conocidos. Se exige el mínimo también
-  en la combinación medio–segmento. Los mixtos son una categoría separada.
 
 No se evalúan diferencias relativas con referencia monetaria cero. Cada
 oportunidad incluye muestras, comparación, acción a evaluar y seguimiento.
-Se ordenan por cantidad de pedidos del grupo; un pedido puede respaldar varias
-reglas. Cambiar controles permite explorar sensibilidad. Los umbrales son
-exploratorios, no valores óptimos validados ni pruebas estadísticas.
+Se ordenan por diferencia relativa descendente. «Magnitud» es alta desde 40 %
+y media desde 20 % hasta menos de 40 %; no expresa prioridad comercial.
+El detalle distingue muestra insuficiente, referencia monetaria no positiva
+y comparación evaluable sin hallazgo. Un pedido puede respaldar varias reglas;
+las muestras no se suman. Los umbrales son exploratorios y fijos, no valores
+óptimos validados ni pruebas estadísticas. No hay reglas por segmento en
+Decisiones; esa composición se explora en Analítica.
 
 Los pagos registrados no son margen ni ingresos netos liquidados. Más cuotas
 asociadas a compras mayores no demuestran que ofrecer cuotas aumente ventas.

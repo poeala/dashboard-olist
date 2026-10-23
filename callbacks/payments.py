@@ -55,9 +55,7 @@ def registrar_callbacks_pagos(app):
                 filtered,
                 view,
                 reference,
-                minimum=30,
-                uplift=20,
-                preference=20,
+                daily=year not in (None, ALL) and month not in (None, ALL),
                 period_label=period_label,
             )
 
