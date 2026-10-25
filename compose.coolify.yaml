@@ -12,6 +12,12 @@ services:
       DB_USER: ${DB_USER:?}
       DB_PASSWORD: ${DB_PASSWORD:?}
       DB_SSLMODE: ${DB_SSLMODE:-require}
+      DASHBOARD_CACHE_DIR: /app/.cache
+      DASHBOARD_CACHE_TTL_SECONDS: ${DASHBOARD_CACHE_TTL_SECONDS:-86400}
+      DASHBOARD_CACHE_VERSION: ${DASHBOARD_CACHE_VERSION:-1}
+      DASHBOARD_USE_MATERIALIZED: ${DASHBOARD_USE_MATERIALIZED:-auto}
+    volumes:
+      - dashboard-cache:/app/.cache
     expose:
       - "8050"
     restart: unless-stopped
@@ -26,6 +32,7 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
   web:
     build:
       context: ./frontend
@@ -47,3 +54,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+volumes:
+  dashboard-cache:

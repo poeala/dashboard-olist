@@ -4,6 +4,7 @@ from sqlalchemy import text
 
 from data.database import engine
 from data.definitions import PERIOD_CUTOFF_SQL
+from data.query_cache import read_sql_cached
 
 
 def cargar_ventas():
@@ -36,7 +37,7 @@ def cargar_ventas():
         WHERE s.order_purchase_date < ({PERIOD_CUTOFF_SQL})
     """)
 
-    df = pd.read_sql(consulta, engine)
+    df = read_sql_cached(consulta, engine)
 
     # Normalizar las columnas de fechas.
     df["order_purchase_date"] = pd.to_datetime(
@@ -80,7 +81,7 @@ def cargar_pagos():
         FROM gld_payment_detail
     """)
 
-    df = pd.read_sql(consulta, engine)
+    df = read_sql_cached(consulta, engine)
 
     # Normalizar las columnas numéricas.
     df["payment_value"] = pd.to_numeric(
@@ -233,7 +234,7 @@ def consultar_ventas_agrupadas(
         ORDER BY {agrupacion}
     """)
 
-    df = pd.read_sql(
+    df = read_sql_cached(
         consulta,
         engine,
         params=parametros
@@ -395,7 +396,7 @@ def consultar_detalle_ventas_agrupadas(
 
     parametros["limite"] = int(limite)
 
-    df = pd.read_sql(
+    df = read_sql_cached(
         consulta,
         engine,
         params=parametros

@@ -9,7 +9,7 @@ COPY callbacks ./callbacks
 COPY components ./components
 COPY data ./data
 COPY views ./views
-RUN useradd --create-home dashboard
+RUN useradd --create-home dashboard && mkdir -p /app/.cache && chown dashboard:dashboard /app/.cache
 USER dashboard
 EXPOSE 8050
 CMD ["gunicorn", "--bind", "0.0.0.0:8050", "--workers", "2", "--timeout", "180", "--access-logfile", "-", "--error-logfile", "-", "app:server"]
