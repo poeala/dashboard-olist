@@ -9,3 +9,6 @@ services:
       service: web
     ports:
       - "127.0.0.1:8080:80"
+
+volumes:
+  dashboard-cache:

@@ -10,3 +10,4 @@ dist/
 !.env.example
 *.log
 test-results/
+.cache/

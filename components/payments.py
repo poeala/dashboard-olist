@@ -240,9 +240,15 @@ def payments_content(rows, view, reference, daily=False, period_label=None):
         content.extend(_decisiones(orders))
     content.append(html.Details([
         html.Summary("Cómo se calculan los pagos y las cuotas"),
-        html.P("Las cuotas son el máximo de los registros del pedido, no su suma. Todos sus registros "
-               "deben tener cuotas enteras mayores o iguales a 1. Un pedido está financiado si el máximo "
-               "supera 1. Varios registros del mismo medio no son pagos mixtos. Los pedidos con algún "
-               "importe o secuencia inválidos se excluyen completos. Los datos se renuevan al reiniciar el backend."),
+        html.P("Los importes corresponden a los pagos registrados y "
+               "no representan ingresos netos ni márgenes de ganancia. "
+               "Para evitar duplicaciones, cada pedido se contabiliza una sola vez. "
+               "Los pedidos que utilizan distintos medios de pago se clasifican "
+               "como pagos mixtos. La cantidad de cuotas se obtiene del máximo "
+               "registrado para el pedido, no de la suma de sus registros de pago. "
+               "Se excluyen los pedidos con importes o secuencias inválidos. "
+               "Los pedidos con cuotas inválidas se excluyen solo de los indicadores de cuotas. "
+               "Período del histórico: del 4 de septiembre de 2016 al 29 de agosto de 2018. "
+               "El período seleccionado se indica al inicio de la vista."),
     ], className="payments-details"))
     return html.Div(content, className="payments-content")

@@ -1,32 +1,36 @@
-"""Snapshots de solo lectura. Se renuevan al reiniciar el proceso, como Ventas."""
-from functools import lru_cache
+"""Snapshots privados con caché persistente y cálculos materializados opcionales."""
 
 import pandas as pd
 from sqlalchemy import text
 
 from data.database import engine
 from data.definitions import PERIOD_CUTOFF_SQL
+from data.query_cache import cached_frame
+from data.materialized import materialized_state, LOGISTICS_SQL, CUSTOMERS_SQL, PAYMENTS_SQL
 
 
-def _read_snapshot(query, dates, numeric):
-    # Las dos consultas comparten una instantánea consistente y no escriben.
-    with engine.connect() as conn:
-        with conn.begin():
-            conn.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"))
-            conn.execute(text("SET LOCAL statement_timeout = '60s'"))
-            cutoff = conn.execute(text(PERIOD_CUTOFF_SQL)).scalar()
-            df = pd.read_sql(text(query), conn, params={"cutoff": cutoff})
-    for column in dates:
-        df[column] = pd.to_datetime(df[column], errors="coerce")
-    for column in numeric:
-        df[column] = pd.to_numeric(df[column], errors="coerce")
-    df.attrs["cutoff"] = (
-        pd.Timestamp(cutoff).tz_localize(None).normalize() - pd.Timedelta(days=1) if cutoff else pd.NaT
-    )
-    return df
+def _read_snapshot(query, dates, numeric, materialized_query=None):
+    def load():
+        with engine.connect() as conn:
+            with conn.begin():
+                conn.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"))
+                conn.execute(text("SET LOCAL statement_timeout = '60s'"))
+                state = materialized_state(conn) if materialized_query else None
+                cutoff = state['cutoff'] if state else conn.execute(text(PERIOD_CUTOFF_SQL)).scalar()
+                df = pd.read_sql(text(materialized_query if state else query), conn, params={"cutoff": cutoff})
+        for column in dates:
+            df[column] = pd.to_datetime(df[column], errors="coerce")
+        for column in numeric:
+            df[column] = pd.to_numeric(df[column], errors="coerce")
+        df.attrs["cutoff"] = (
+            pd.Timestamp(cutoff).tz_localize(None).normalize() - pd.Timedelta(days=1) if cutoff else pd.NaT
+        )
+        if state:
+            df.attrs['materialized_at'] = str(state['refreshed_at'])
+        return df
+    return cached_frame('business_snapshot', {'query': query, 'materialized': materialized_query}, load)
 
 
-@lru_cache(maxsize=1)
 def cargar_logistica():
     # Ventas se reduce primero a pedido: el JOIN no multiplica vendedores
     # por artículos. Logística conserva su grano pedido-vendedor.
@@ -51,10 +55,9 @@ def cargar_logistica():
            OR o.order_status NOT IN ('canceled', 'unavailable')
         ORDER BY l.order_id, l.seller_id
     """, ["purchase_date", "delivered_date", "estimated_date"],
-        ["distance_km", "freight", "product_value", "delivery_days", "review_score"])
+        ["distance_km", "freight", "product_value", "delivery_days", "review_score"], LOGISTICS_SQL)
 
 
-@lru_cache(maxsize=1)
 def cargar_clientes():
     # Los importes y la frecuencia se recalculan desde artículos a pedidos.
     # El segmento Gold se usa solo como dimensión histórica explícita.
@@ -75,10 +78,9 @@ def cargar_clientes():
         LEFT JOIN gld_customer_analytics c
             ON c.customer_unique_id = o.customer_id
         ORDER BY o.purchase_date, o.order_id
-    """, ["purchase_date"], ["product_value", "items", "review_score"])
+    """, ["purchase_date"], ["product_value", "items", "review_score"], CUSTOMERS_SQL)
 
 
-@lru_cache(maxsize=1)
 def cargar_clientes_gold():
     return _read_snapshot("""
         SELECT
@@ -114,7 +116,6 @@ def cargar_clientes_gold():
     ])
 
 
-@lru_cache(maxsize=1)
 def cargar_pagos_bi():
     # Unir pagos contra pedidos ya consolidados, nunca contra artículos.
     # LEFT JOIN conserva pedidos sin pagos para informar cobertura.
@@ -139,4 +140,4 @@ def cargar_pagos_bi():
         LEFT JOIN gld_payment_detail p ON p.order_id = o.order_id
         LEFT JOIN customers c ON c.customer_unique_id = o.customer_id
         ORDER BY o.purchase_date, o.order_id, p.payment_sequential
-    """, ["purchase_date"], ["payment_value", "payment_installments"])
+    """, ["purchase_date"], ["payment_value", "payment_installments"], PAYMENTS_SQL)
